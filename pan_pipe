@@ -1,0 +1,172 @@
+#!/bin/bash
+set -e
+
+scriptName="pan_pipe"
+version="0.0.1"
+
+## download and collect all of the genomes you want in your pangenome
+# it is very important to QC this collection.
+# often genomes are mislabeled in genbank or of poor quality
+
+
+
+HELP=0
+THREADS=1
+ROARY_ARGS=''
+PROKKA_ARGS=''
+GIFROP_ARGS=''
+
+# parse arguments here
+
+for arg in "$@"
+do
+    case $arg in
+	-h|--help)
+	HELP=1
+	shift
+	;;
+        --roary_args)
+        ROARY_ARGS=$2
+        shift # Remove --initialize from processing
+        ;;
+        --prokka_args)
+        PROKKA_ARGS=$2
+        shift # Remove --initialize from processing
+        ;;
+        --gifrop_args)
+        GIFROP_ARGS=$2
+        shift # Remove argument name from processing
+        # shift # Remove argument value from processing
+        ;;
+        -t|--threads)
+        THREADS="$2"
+        shift # Remove argument name from processing
+        # shift # Remove argument value from processing
+        ;;
+        *)
+        OTHER_ARGUMENTS+=("$1") # arg values seem to be accumulating in here
+        shift # Remove generic argument from processing
+        ;;
+    esac
+done
+
+
+# help message here
+
+# Print usage
+usage() {
+  echo -n "
+
+Usage:
+
+  ${scriptName} [OPTION]...
+
+This script should be executed from a directory that contains bacterial genomes in fasta format
+with the suffix ".fna".  This script will annotate all genomes with prokka, then calculate a
+pangenome with roary, finally it will extract genomic islands from the pangenome with gifrop.
+Options can be passed to prokka, roary, and gifrop.
+
+IMPORTANT!!
+
+Inputs should be carefully QC'd.  Garbage in, garbage out.
+
+ Options:
+  -h, --help        Display this help and exit
+  -t, --threads     Number of threads to use for parallel commands. Will be overridden by values in *_args options
+  --roary_args      a quoted string of arguments to pass to roary, e.g.: '-t 8 -s -e --mafft'
+  --prokka_args     a quoted string of arguments to pass to prokka, e.g: '--rawproduct --proteins prots.gbk'
+  --gifrop_args     a quoted string of arguments to pass to gifrop, e.g: '--no_plots -m 7'
+
+Example:
+
+pan_pipe
+or
+pan_pipe --gifrop_args '--min_genes 5 --no_plots' --roary_args '-s' --prokka_args '--proteins prots.gbk'
+
+
+"
+}
+
+
+if [[ $HELP -eq 1 ]]
+ then
+     usage
+     exit
+fi
+
+
+
+# check deps
+
+# check dependencies
+# ERR=0
+echo "===== Dependencies check ====="
+[ -z `which parallel` ]      && echo "parallel      .... not found" && ERR=1 || echo "parallel      .... good"
+[ -z `which abricate` ]      && echo "abricate      .... not found" && ERR=1 || echo "abricate      .... good"
+[ -z `which Rscript` ]       && echo "Rscript       .... not found" && ERR=1 || echo "Rscript       .... good"
+[ -z `which find` ]          && echo "find          .... not found" && ERR=1 || echo "find          .... good"
+[ -z `which prokka` ]        && echo "prokka        .... not found" && ERR=1 || echo "prokka        .... good"
+[ -z `which roary` ]         && echo "roary         .... not found" && ERR=1 || echo "roary         .... good"
+[ -z `which gifrop` ]        && echo "girfop        .... not found" && ERR=1 || echo "gifrop        .... good"
+
+if [[ $ERR -eq 1 ]]
+ then
+     echo "Link or install any of your 'need to install' programs above"
+     exit
+fi
+
+
+
+
+##### annotate all fasta formatted genomes with prokka #####
+# technically this will give an error if there are enough *fna files to give an arguments too long error
+# but if you are really trying to make a pangenome with that many fastas, this error will be the least of your worries
+
+mkdir panpipe_logs
+
+echo 'generating prokka commands... see prokka_cmds.txt'
+
+for x in *fna
+do
+printf 'prokka --prefix %s %s %s\n' "${x%.fna}" "$PROKKA_ARGS" "$x" >> prokka_cmds.txt
+done
+
+echo 'done generating prokka commands'
+
+echo 'executing prokka commands in parallel'
+
+echo 'this can take a bit...'
+cat prokka_cmds.txt | parallel >> ./panpipe_logs/prokka_logs.txt 2>&1
+
+echo 'done with prokka'
+# make a directory for the pangenome analysis
+mkdir pan
+
+# then copy all gffs from prokka directories
+
+find . -maxdepth 2 -path ./pan -prune -o -name '*.gff' -exec cp {} ./pan/ \;
+
+
+# enter the pan directory
+cd pan
+
+# run roary
+
+roar_cmd="roary $ROARY_ARGS *gff"
+echo "running command: $roar_cmd"
+
+roary $ROARY_ARGS *gff 2>&1 | tee -a ../panpipe_logs/roary.log
+
+echo 'done running roary'
+
+# then run gifrop
+echo 'running gifrop'
+gif_cmd="gifrop $GIFROP_ARGS --get_islands"
+echo "running command: $gif_cmd"
+
+gifrop $GIFROP_ARGS --get_islands 2>&1 | tee -a ../panpipe_logs/gifrop.log
+
+echo 'Done!'
+# boom!  now you have a pan genome and genomic islands in the context of this pan genome
+
+

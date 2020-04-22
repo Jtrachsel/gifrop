@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+gifrop.Rproj
+./releases/
+./conda_build
+/test_data/
+/test_data2/

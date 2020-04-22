@@ -1,0 +1,24 @@
+#!/bin/bash
+set -e 
+
+
+# THIS CHUNK TO SET UP CUSTOM ABRICATE DBs #
+
+# extract abricate db filepath
+DATADIR=$(abricate 2>&1 >/dev/null | grep 'datadir' | sed -E 's/.*folder \[(.*)\]./\1/')
+echo $DATADIR
+
+
+gunzip ./db/abricate_megares_reduced.fasta.gz
+gunzip ./db/viroseqs_90.fasta.gz
+
+
+mkdir "$DATADIR"/megares
+mkdir "$DATADIR"/viroseqs
+
+cp ./db/abricate_megares_reduced.fasta "$DATADIR"/megares/sequences
+cp ./db/viroseqs_90.fasta "$DATADIR"/viroseqs/sequences
+
+abricate --setupdb
+
+# END ABRICATE DB SETUP #
