@@ -22,15 +22,16 @@ If all you have are nucleotide fastas then you can use the included `pan_pipe` s
 More or less this is a wrapper for exploring roary results.  
   
 
-## conda installation
+## conda installation  
+coming soon...  
 **create new conda environment**  
 `conda create -n gifrop`  
-
+  
 **activate new environment**  
 `conda activate gifrop`  
-
+  
 **install gifrop**  
-`conda install gifrop`  
+`conda install -c conda-forge -c bioconda -c defaults gifrop`
   
 or  
 

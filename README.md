@@ -26,6 +26,7 @@ More or less this is a wrapper for exploring roary results.
 
 ## conda installation
 
+coming soon…  
 **create new conda environment**  
 `conda create -n gifrop`
 
@@ -33,7 +34,7 @@ More or less this is a wrapper for exploring roary results.
 `conda activate gifrop`
 
 **install gifrop**  
-`conda install gifrop`
+`conda install -c conda-forge -c bioconda -c defaults gifrop`
 
 or
 
