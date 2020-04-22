@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -e # terminate the script immediately upon errors
 scriptName='gifrop'
-version='0.0.2'
+version='0.0.3'
 
 # this line returns the directory that this script resides in
 # it is used to help determine the paths of the R scripts
