@@ -18,11 +18,11 @@ library(pheatmap)
 #getwd()
 
 ## read in island info data ##
-res_4_real <- read_csv('./gifrop_out/my_islands/island_info.csvv', col_types = c('cccddddcddlc'))
+res_4_real <- read_csv('./gifrop_out/my_islands/island_info.csv', col_types = c('cccddddcddlc'))
 
 
-current_directory <- getwd()
-seq_dat_path <- paste0(current_directory, '/gifrop_out/sequence_data/')
+# current_directory <- getwd()
+# seq_dat_path <- paste0(current_directory, '/gifrop_out/sequence_data/')
 gff_files <- list.files(path = './gifrop_out/sequence_data/', pattern = 'short.gff', full.names = TRUE)
 
 # This creates a vector of column specifications to be passed to the read_csv function

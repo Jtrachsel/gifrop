@@ -14,10 +14,13 @@ stopifnot(exprs =
 
 
 ### FOR TESTING ONLY ####
-# setwd("/home/Julian.Trachsel/IslandR_paper/complete_sal/MDR_LT2/pan_nosplit")
+# setwd('../IslandR/test_data/pan/')
 # min_genes <- 4
 # flankingDNA <- 0
 # getwd()
+
+
+
 
 ###
 # load packages
@@ -31,9 +34,6 @@ suppressPackageStartupMessages(library(BSgenome, quietly = TRUE, warn.conflicts 
 print('done loading packages')
 
 # Functions #
-
-
-
 
 find_islands <- function(roary_gpa, min_genes = 4){
   # This function identifies genomic islands from roary output gene_presence_absence.csv
@@ -70,6 +70,9 @@ find_islands <- function(roary_gpa, min_genes = 4){
     # this block selects only the locus tag column from the genome at hand
     # and then separates the tab delimited values
     # this vector of locus tags is then used to identify genomic islands
+    
+    # this is inefficient because it does this select for each genome, 
+    # should split into list of each genome's loc_tags and then apply subsequent function to it.
     step0 <- access_frags %>%
       select(all_of(genome)) %>%
       separate_rows(genome, sep = '\t') %>%
@@ -152,22 +155,22 @@ get_islands <- function(island_info, genome){
 # needs more testing.
 # assumes that order is ID, locus_tag, product, with product at the very end.
 
-gff_parse2 <- function(path){
-  # used to parse the shortened prokka gff files.
-  # can take full gff (with sequence data appended)
-  # but is much slower
-  # ADDING tRNA TO TYPES ALLOWED BECAUSE
-  gff <- read_delim(path,
-                    delim = '\t',
-                    col_names = c("seqid", "source", "type", "start", "end", "score", "strand","phase","attributes"),
-                    comment = '#', progress = FALSE, col_types = c('cccddcccc')) %>%
-    filter(type %in% c('CDS', 'tRNA')) %>%
-    tidyr::extract(attributes,
-                   into = c('ID', 'locus_tag', 'product'),
-                   regex ='ID=(.*);.*locus_tag=(.*_[0-9]+);.*product=(.*)',
-                   remove = FALSE)
-  return(gff)
-}
+# gff_parse2 <- function(path){
+#   # used to parse the shortened prokka gff files.
+#   # can take full gff (with sequence data appended)
+#   # but is much slower
+#   # ADDING tRNA TO TYPES ALLOWED BECAUSE
+#   gff <- read_delim(path,
+#                     delim = '\t',
+#                     col_names = c("seqid", "source", "type", "start", "end", "score", "strand","phase","attributes"),
+#                     comment = '#', progress = FALSE, col_types = c('cccddcccc')) %>%
+#     filter(type %in% c('CDS', 'tRNA')) %>%
+#     tidyr::extract(attributes,
+#                    into = c('ID', 'locus_tag', 'product'),
+#                    regex ='ID=(.*);.*locus_tag=(.*_[0-9]+);.*product=(.*)',
+#                    remove = FALSE)
+#   return(gff)
+# }
 
 
 
@@ -196,8 +199,7 @@ gff_parse3 <- function(path){
 ##### read in files #
 
 current_directory <- getwd()
-seq_dat_path <- paste0(current_directory, '/sequence_data/')
-gff_files <- list.files(path = './sequence_data/', pattern = 'short.gff', full.names = TRUE)
+gff_files <- list.files(path = './gifrop_out/sequence_data/', pattern = 'short.gff', full.names = TRUE)
 
 
 
@@ -238,20 +240,15 @@ print('reading in gffs...')
 # parallel this? meh.
 gffs <- lapply(gff_files, gff_parse3)
 
-gff_names <- sub('./sequence_data/(.*)_short.gff','\\1',gff_files)
+gff_names <- sub('./gifrop_out/sequence_data/(.*)_short.gff','\\1',gff_files)
 gff_names <- gsub('/?','',gff_names)
 
 names(gffs) <- gff_names
 
-# do i still use this?
-master_gffs <- bind_rows(gffs)
-
-
 
 ###### main loop ###
 # should this be a function?
-# it could be applied to each column of the gpa dataframe
-
+# it could be applied to each genome column of the gpa dataframe
 
 res <- list()
 for (genome_index in 1:length(master_res)){
@@ -297,12 +294,10 @@ res_4_real <- bind_rows(res) %>%
   select(seqid, genome_name, start, end, island_ID, island_length, num_genes, locus_tags) %>%
   filter(num_genes > min_genes)
 
-genomes <- unique(res_4_real$genome_name)
-
 ##### read in fastas
-genome_filenames <- paste(seq_dat_path, genomes, '.fna', sep = '')
+genome_filenames <- list.files(path = './gifrop_out/sequence_data', pattern = '.fna', full.names = TRUE)
 
-# why sapply? why not one of the others?
+
 print('reading in fastas...')
 genome_seqs_list <- sapply(genome_filenames, readDNAStringSet)
 print('done reading in fastas')
@@ -322,9 +317,6 @@ res_4_real <- res_4_real %>%
          Iend= ifelse(percent_island >90, seqid_len, end))
 
 
-# Add accessory fragment info here #
-# before writing out island info #
-
 # this block associates each locus tag with an accessory fragment value from roary
 acc_frag_tmp <- gpa %>%
   gather(key='genome', value='locus_tags', -c(1:14)) %>%
@@ -337,7 +329,7 @@ acc_frag_tmp <- gpa %>%
 
 
 # creates a tibble containing fasta files for each genome name
-genome_seqs <- tibble(genome_name=sub('.*/sequence_data/(.*).fna','\\1',names(genome_seqs_list)),
+genome_seqs <- tibble(genome_name=sub('.*/gifrop_out/sequence_data/(.*).fna','\\1',names(genome_seqs_list)),
                       genome=genome_seqs_list)
 
 nesty_res <- res_4_real %>%
@@ -356,30 +348,18 @@ all_islands <- unlist(all_islands)
 Biostrings::writeXStringSet(all_islands, './gifrop_out/my_islands/All_islands.fasta')
 
 
-#### OUTPUT GFFS HERE? ####
-# getting there...
+#### OUTPUT GFFS HERE ####
 
 # now need way to incorporate ID_non_island_loc_tags
 print('collecting island gffs')
-#
-# ID_nonisland_loc_tags <- function(locus_tag_vec, seqid, gff){
-#   # this is designed to determine if all the locus tags on a contig
-#   # are part of a genomic island,
-#   # returns a single value TRUE or FALSE
-#   # TRUE means all locus tags on the contig are part of this particular island #
-#   # FALSE means that there are other non-island locus tags on the contig
-#   gff <- gff %>% filter(seqid == seqid)
-#   only_island_loc_tags <- all(gff$locus_tag %in% locus_tag_vec) # FALSE means other locus tags (non-island) are on this seqid
-#   # island_gff <- gff[gff$locus_tag %in% locus_tag_vec,]
-#
-# }
+
 
 # fix extra info on locus tags...
 res_4_real <- bind_rows(gffs) %>%
   group_by(seqid) %>%
   select(locus_tag) %>%
   nest() %>%
-  mutate(seqid_loc_tags=list(unlist(data, use.names = FALSE))) %>%
+  mutate(seqid_loc_tags=list(unlist(data, use.names = FALSE))) %>% 
   select(-data) %>%
   right_join(res_4_real) %>%
   mutate(only_island=map2_lgl(.x = seqid_loc_tags, .y = locus_tags, .f = ~ all(.x %in% .y)))
@@ -451,22 +431,13 @@ island_info <- res_4_real %>%
   select(-Istart, -Iend)
 
 
-
-# what does the comment below mean?
-## ADD NON ISLAND GFF BEFORE WRITING OUT
-
-
 write_csv(island_info, './gifrop_out/my_islands/island_info.csv')
-
-
 
 
 
 ### ADJUST START AND END COORDS HERE ###
 # might want to take leading and trailing DNA sequences before and after coding sequences
 # could look at insertion sites etc
-
-# flankingDNA <-args[3]
 
 if(flankingDNA > 0){
 
