@@ -13,7 +13,7 @@ library(pheatmap)
 
 
 ### ONLY FOR HERE FOR TESTING ###
-# setwd('/home/Julian.Trachsel/IslandR_paper/complete_sal/MDR_LT2/pan_nosplit')
+# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data/pan/')
 # setwd('/home/julian/gifrop_test/pan')
 #getwd()
 
@@ -171,9 +171,9 @@ island_ID_loc_tags <- res_4_real %>%
   mutate(locus_tags = strsplit(x = locus_tags, split='|', fixed=TRUE)) %>%
   unnest(cols = locus_tags)
 
-
-# island_dat_loc <- '/home/julian.trachsel/VDL/Islands/'
-island_dat_loc <- paste(getwd(),'./gifrop_out/my_islands/', sep = '' )
+# 
+# # island_dat_loc <- '/home/julian.trachsel/VDL/Islands/'
+# island_dat_loc <- paste(getwd(),'./gifrop_out/my_islands/', sep = '' )
 
 #### REPLACE DREP CLUSTERING WITH ROARY GENE BASED CLUSTERING #####
 
@@ -501,7 +501,7 @@ cluster_qual <-
             maxmin_divmin   = (max_genes - min_genes)/min_genes)
 
 
-variable_clusters <- cluster_qual %>% filter(maxmin_divmin != 0)
+# variable_clusters <- cluster_qual %>% filter(maxmin_divmin != 0)
 
 
 
@@ -576,7 +576,7 @@ lapply(imperfect_clusters, gene_by_island_heatmap, gpa_clust = gpa_clust)
 
 
 ########
-gene_by_island_heatmap(gpa_clust = gpa_clust, SECONDARY_CLUSTER = 120)
+# gene_by_island_heatmap(gpa_clust = gpa_clust, SECONDARY_CLUSTER = 120)
 
 
 ## secondary cluster by genome heatmaps here
