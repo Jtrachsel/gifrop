@@ -26,7 +26,6 @@ More or less this is a wrapper for exploring roary results.
 
 ## conda installation
 
-coming soon…  
 **create new conda environment**  
 `conda create -n gifrop`
 
