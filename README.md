@@ -1,12 +1,23 @@
-gifrop
-================
+
+[![install with
+bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/gifrop/README.html)
+
+# gifrop
 
 **G**enomic **I**slands **f**rom **Ro**ary **P**angenomes.
 
 This program is supposed to identify ‘genomic islands’ from roary
 pangenomes. The intent was to try and identify units of horizontal gene
 transfer within very closely related strains using a pangenome
-framework. pangenomic islands?
+framework.
+
+In general, this type of analysis works best for very closely related
+strains, for example, a collection of *Salmonella enterica serovar
+typhimurium*.
+
+In theory, this program will work on pangenomes of any size, though
+things get very messy with too many genomes or genomes that are too
+different from one another.
 
 **Prerequisites:**
 
@@ -41,18 +52,22 @@ or
 
 Install the dependencies and make sure they are in your path:
 
-1)  parallel  
-2)  abricate  
+1)  [GNU parallel](https://www.gnu.org/software/parallel/)  
+2)  [abricate](https://github.com/tseemann/abricate)  
     \- You will also need these custom abricate databases
       - <https://github.com/Jtrachsel/megares_db_4_abricate>  
       - <https://github.com/Jtrachsel/viroseqs>  
-3)  R 3.6.\* and these R packages:  
+3)  [R 3.6.\*](https://www.r-project.org/) and these R packages:  
     \-
     ‘dplyr’,‘tidyr’,‘readr’,‘tibble’,‘ggplot2’,‘purrr’,‘Biostrings’,‘BSgenome’,
     ‘igraph’, ‘pheatmap’  
-4)  roary (if using pan\_pipe script)  
-5)  prokka (if using pan\_pipe script)  
+4)  [roary](https://sanger-pathogens.github.io/Roary/) (if using
+    pan\_pipe script)  
+5)  [prokka](https://github.com/tseemann/prokka) (if using pan\_pipe
+    script)  
 6)  make the scripts from this repo available in your path
+
+<br>
 
 ## Running gifrop
 
@@ -65,7 +80,7 @@ Install the dependencies and make sure they are in your path:
 
 ## pan\_pipe script
 
-The included script ‘pan\_pipe’ is a complete pipeline for extracting
+The included script `pan_pipe` is a complete pipeline for extracting
 genomic islands from a collection of nucleotide fastas.
 
 These are the basic steps:  
@@ -76,13 +91,16 @@ These are the basic steps:
 You are able to pass arguments to prokka, roary and gifrop using quoted
 strings of arguments, see `pan_pipe --help` for more information.
 
+<br>
+
 ## How this program identifies pangenomic islands
 
 1)  **remove the core genome from the pangenome.**
     
       - Currently, this removes any gene that occurs in all isolates
-        exactly 1 time. This means that genes that occur twice or more
-        in any genome are currently kept for consideration.  
+        exactly 1 time. This means that genes that only occur in some
+        genomes and genes that occur twice or more in any genome are
+        currently kept for consideration.  
 
 2)  **Identify strings of consecutive genes** (locus tag numbers)  
 
@@ -136,6 +154,8 @@ strings of arguments, see `pan_pipe --help` for more information.
          - both fasta format and gffs  
       6. logfiles  
     ```
+
+<br>
 
 | file                        | description                                                                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
