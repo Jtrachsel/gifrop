@@ -14,7 +14,7 @@ stopifnot(exprs =
 
 
 ### FOR TESTING ONLY ####
-# setwd('../IslandR/test_data/pan/')
+# setwd('/home/Julian.Trachsel/Vanina/filt_assems/GIFROP_EXAMPLE/test2/pan/')
 # min_genes <- 4
 # flankingDNA <- 0
 # getwd()
@@ -411,7 +411,8 @@ print('done writing island gffs')
 ############## island info df ###########
 
 # this builds the final island info dataframe
-island_info <- res_4_real %>%
+island_info <- 
+  res_4_real %>%
   ungroup() %>%
   tidyr::unnest(cols = 'locus_tags') %>%
   left_join(acc_frag_tmp) %>% group_by(island_ID) %>%
