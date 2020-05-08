@@ -185,6 +185,9 @@ If there is a situation where two distinct genomic islands are inserted
 adjacent to one another or one nested within another etc., they will be
 treated as one genomic island.
 
+**Error when identical contig names in different assemblies**  
+I think running prokka with `--compliant` will avoid this.
+
 ## TODO
 
 1)  link abricate results to pangenome, use coords of hits with gffs to
