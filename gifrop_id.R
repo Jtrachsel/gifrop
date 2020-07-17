@@ -14,7 +14,7 @@ stopifnot(exprs =
 
 
 ### FOR TESTING ONLY ####
-# setwd('/home/Julian.Trachsel/Vanina/filt_assems/GIFROP_EXAMPLE/test2/pan/')
+# setwd('/home/Julian.Trachsel/IslandR_paper/complete_sal/MDR_LT2/pan')
 # min_genes <- 4
 # flankingDNA <- 0
 # getwd()
@@ -224,7 +224,7 @@ gpa <- read_csv('./gene_presence_absence.csv', col_types = all_cols)
 
 ##### call to find islands function
 print('Identifying genomic islands... (streches of consecutive locus tags')
-master_res <- find_islands(roary_gpa = gpa)
+master_res <- find_islands(roary_gpa = gpa, min_genes = min_genes)
 
 
 if ( length(master_res) == 0){
@@ -292,7 +292,7 @@ for (genome_index in 1:length(master_res)){
 
 res_4_real <- bind_rows(res) %>%
   select(seqid, genome_name, start, end, island_ID, island_length, num_genes, locus_tags) %>%
-  filter(num_genes > min_genes)
+  filter(num_genes >= min_genes)
 
 ##### read in fastas
 genome_filenames <- list.files(path = './gifrop_out/sequence_data', pattern = '.fna', full.names = TRUE)

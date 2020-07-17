@@ -73,7 +73,7 @@ Inputs should be carefully QC'd.  Garbage in, garbage out.
  Options:
   -h, --help        Display this help and exit
   -t, --threads     Number of threads to use for parallel commands. Will be overridden by values in *_args options
-  --roary_args      a quoted string of arguments to pass to roary, e.g.: '-t 8 -s -e --mafft'
+  --roary_args      a quoted string of arguments to pass to roary, e.g.: '-p 8 -s -e --mafft'
   --prokka_args     a quoted string of arguments to pass to prokka, e.g: '--rawproduct --proteins prots.gbk'
   --gifrop_args     a quoted string of arguments to pass to gifrop, e.g: '--no_plots -m 7'
 

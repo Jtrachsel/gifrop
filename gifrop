@@ -255,7 +255,7 @@ MEGARES=$(abricate --list |grep megares2 |wc -l)
 if [[ "$MEGARES" == 1 ]]
   then
   echo 'MEGARes database found for abricate'
-  find . -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1;
+  find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1;
 fi
 
 

@@ -13,7 +13,7 @@ library(pheatmap)
 
 
 ### ONLY FOR HERE FOR TESTING ###
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data/pan/')
+# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data/split/pan/')
 # setwd('/home/julian/gifrop_test/pan')
 #getwd()
 
@@ -104,29 +104,33 @@ allbricates <- bind_rows(plasfinders, vfdbs, resfinders, virofinders) %>%
 # which was the whole reason for using megares.
 # currently still need my custom abricate db....
 
-megares_files <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'megares', full.names = TRUE)
+# noticed some issues where ncbi or resfinder has better hits than megares
+# going to strip just the metal and biocide genes from the megares db
+# then get AMR from ncbi database and just metal biocide from megares
 
-if (length(megares_files) > 0){
-  print('yes! megaresfiles')
-  megares <- bind_rows(lapply(megares_files, read_tsv, col_types = c('ccddcccccddcccc'))) %>%
-    filter(`%COVERAGE` > 66)
+# megares_files <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'megares', full.names = TRUE)
+# 
+# if (length(megares_files) > 0){
+#   print('yes! megaresfiles')
+#   megares <- bind_rows(lapply(megares_files, read_tsv, col_types = c('ccddcccccddcccc'))) %>%
+#     filter(`%COVERAGE` > 66)
+# 
+#   res_types <- megares%>%
+#     mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
+#     group_by(SEQUENCE) %>%
+#     summarise(res_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
+#     transmute(island_ID=SEQUENCE, res_type=res_type)
+# 
+#     allbricates <- bind_rows(megares, vfdbs, plasfinders, virofinders)%>%
+#       mutate(island_ID=SEQUENCE) %>%
+#       select(island_ID, everything(), -SEQUENCE)
+# 
+#   print('using megares database instead of resfinder')
+# }
+# 
+# 
 
-  res_types <- megares%>%
-    mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
-    group_by(SEQUENCE) %>%
-    summarise(res_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
-    transmute(island_ID=SEQUENCE, res_type=res_type)
-
-    allbricates <- bind_rows(megares, vfdbs, plasfinders, virofinders)%>%
-      mutate(island_ID=SEQUENCE) %>%
-      select(island_ID, everything(), -SEQUENCE)
-
-  print('using megares database instead of resfinder')
-}
-
-
-
-# end if megares block
+# # end if megares block
 
 
 print('Done reading in abricate files')
@@ -266,7 +270,7 @@ clouv <- cluster_louvain(g)
 
 
 # generate layout so primary and secondary clusters can be plotted on the same layout
-
+# PRUNE LOW WEIGHT EDGES HERE #
 
 LO <- layout_nicely(g, dim = 2)
 
@@ -573,6 +577,8 @@ imperfect_clusters <- cluster_qual %>%
 
 lapply(imperfect_clusters, gene_by_island_heatmap, gpa_clust = gpa_clust)
 # dev.off()
+
+# gene_by_island_heatmap(gpa_clust = gpa_clust, SECONDARY_CLUSTER = 9)
 
 
 ########
