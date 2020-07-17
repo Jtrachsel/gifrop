@@ -150,7 +150,7 @@ res_info <- allbricates %>%
 island_types <- allbricates %>% select(island_ID, DATABASE) %>% unique() %>%
   mutate(DATABASE=case_when(
     DATABASE == 'plasmidfinder' ~ 'plasmid',
-    DATABASE %in% c('resfinder', 'MEGARes')     ~ 'AMR',
+    DATABASE %in% c('ncbi', 'MEGARes')     ~ 'AMR',
     DATABASE == 'vfdb'          ~ 'virulence',
     DATABASE == 'PHAGE'          ~ 'phage',
   )) %>% group_by(island_ID) %>%
