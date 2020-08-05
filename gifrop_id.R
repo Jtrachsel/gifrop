@@ -14,7 +14,7 @@ stopifnot(exprs =
 
 
 ### FOR TESTING ONLY ####
-# setwd('/home/Julian.Trachsel/IslandR_paper/complete_sal/MDR_LT2/pan')
+# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan/')
 # min_genes <- 4
 # flankingDNA <- 0
 # getwd()
@@ -116,7 +116,7 @@ find_islands <- function(roary_gpa, min_genes = 4){
 restore_locus_tags <- function(island, locus_tag_prefix){
   # This function is used to restore the original state of the locus tags.
   # The locus tags are stripped of their contig identifier during
-  # the search for strings of consequtive locus tag numbers
+  # the search for strings of consecutive locus tag numbers
   # and this puts them back the way they were
   tmp_res <- c()
   for (index in 1:length(island)){
@@ -270,12 +270,13 @@ for (genome_index in 1:length(master_res)){
         summarise(genome_name=genome_name,
                   start=min(start),
                   end=max(end),
-                  island_number=unique(group_indices()), # this helps discriminate when two islands look like one but are on different contigs
+                  island_number=unique(cur_group_id()), # this helps discriminate when two islands look like one but are on different contigs
                   island_name=island_name,
                   island_ID=paste(island_name, island_number, sep = '_'),
                   island_length=(end-start)+1,
                   locus_tags=list(locus_tag), # list of all the locus tags in the island
-                  num_genes = length(locus_tag))
+                  num_genes = length(locus_tag), 
+                  .groups='drop')
 
       genome_res[[island_index]] <- tmp2
 
@@ -357,7 +358,7 @@ print('collecting island gffs')
 # fix extra info on locus tags...
 res_4_real <- bind_rows(gffs) %>%
   group_by(seqid) %>%
-  select(locus_tag) %>%
+  select(seqid, locus_tag) %>%
   nest() %>%
   mutate(seqid_loc_tags=list(unlist(data, use.names = FALSE))) %>% 
   select(-data) %>%

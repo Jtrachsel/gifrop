@@ -13,7 +13,7 @@ library(pheatmap)
 
 
 ### ONLY FOR HERE FOR TESTING ###
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data/split/pan/')
+# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan/')
 # setwd('/home/julian/gifrop_test/pan')
 #getwd()
 
@@ -47,7 +47,8 @@ plasfinders <- bind_rows(plasfinders)
 plasmid_types <- plasfinders %>%
   mutate(gene_percent=paste(GENE,'<',  `%COVERAGE`,'%', '>', sep = '')) %>%
   group_by(SEQUENCE) %>%
-  summarise(plasmid_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
+  summarise(plasmid_type=paste(gene_percent, sep = '~', collapse = '~'), 
+            .groups='drop') %>%
   transmute(island_ID=SEQUENCE, plasmid_type=plasmid_type)
 
 # read in vfdb results and bind together
@@ -59,7 +60,8 @@ vfdbs <- bind_rows(vfdbs)
 vir_types <- vfdbs%>%
   mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
   group_by(SEQUENCE) %>%
-  summarise(vir_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
+  summarise(vir_type=paste(gene_percent, sep = '~', collapse = '~'), 
+            .groups='drop') %>%
   transmute(island_ID=SEQUENCE, vir_type=vir_type)
 
 # read in resfinder results (should switch to ncbi as default?)
@@ -70,7 +72,9 @@ resfinders <- bind_rows(resfinders) %>% filter(`%COVERAGE` > 66)
 # concatenate all resfinder genes and produce res_type for all islands
 res_types <- resfinders%>%
   mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
-  group_by(SEQUENCE) %>% summarise(res_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
+  group_by(SEQUENCE) %>%
+  summarise(res_type=paste(gene_percent, sep = '~', collapse = '~'), 
+            .groups='drop') %>%
   transmute(island_ID=SEQUENCE, res_type=res_type)
 
 # virotypes
@@ -84,7 +88,8 @@ virofinders <- bind_rows(virofinders) %>% filter(`%COVERAGE` > 66)
 viro_types <- virofinders%>%
   mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
   group_by(SEQUENCE) %>%
-  summarise(viro_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
+  summarise(viro_type=paste(gene_percent, sep = '~', collapse = '~'), 
+            .groups='drop') %>%
   transmute(island_ID=SEQUENCE, viro_type=viro_type)
 
 
@@ -253,7 +258,7 @@ diag(co_mat) <- 0
 g <- graph_from_adjacency_matrix(co_mat, mode = "upper", weighted = TRUE)
 
 # Assign nodes weight equal to number of genes?
-# g <- set.vertex.attribute(g, "v_weight", value = colSums(ipa))
+g <- set.vertex.attribute(g, "v_weight", value = colSums(ipa))
 
 # #
 # plot.igraph(g, vertex.label=NA)
@@ -306,12 +311,6 @@ LO <- layout_nicely(g, dim = 2)
 #
 # names(membership(clouv)) == names(membership(cweak))
 
-
-clust_info <- tibble(island_ID = names(membership(clouv)),
-                     primary_cluster = membership(cweak),
-                     secondary_cluster = membership(clouv))
-
-
 # table(partition)
 
 
@@ -344,11 +343,125 @@ clust_info <- tibble(island_ID = names(membership(clouv)),
 #      vertex.label=NA,
 #      main='Graph based clustering, Secondary clusters shown')
 
+### Experimental cluster zone ###
+
+# clust_info %>% count(primary_cluster) %>% arrange(desc(n))
+# 
+# subme <- clust_info %>% filter(primary_cluster == 5) %>% pull(island_ID)
+# subg <- induced_subgraph(g, subme)
+# plot(subg)
+# 
 
 
 
 
-#
+# 
+# 
+# E(subg)
+# 
+# 
+# E(g)
+# 
+# # E(subg)$weight
+# # 
+# # hist(E(subg)$weight, breaks = 100)
+# 
+# quantile(E(subg)$weight)
+
+# removes edges with weights 1 and 2
+# subg.filt <- delete.edges(subg, which(E(subg)$weight > 3))
+# #
+# plot(subg.filt)
+# 
+
+# this can come in handy?
+# set_edge_attr(graph, name, index = E(graph), value)
+# V(g)[idx]$attr
+# 
+# # 
+# igraph::adjacent_vertices()
+# igraph::as_data_frame(g)
+# # 
+# # thiscanwork <- igraph::as_long_data_frame(subg)
+# thiscanwork <- igraph::as_long_data_frame(g)
+
+
+
+
+edge_values <- 
+  igraph::as_long_data_frame(g) %>%
+  mutate(
+    largestVw=ifelse(from_v_weight > to_v_weight, from_v_weight, to_v_weight), 
+    LVWmEW=largestVw-weight, 
+    LVWdEW=largestVw/weight, 
+    absdifVW=abs(from_v_weight - to_v_weight), 
+    AdifVWmEW=absdifVW - weight, 
+    AdifVWdEW=absdifVW / weight, 
+    maybe=LVWmEW/largestVw)
+
+# hist(edge_values$weight, breaks=50)
+# hist(edge_values$largestVw, breaks=50)
+# hist(edge_values$LVWmEW, breaks=50)
+# hist(edge_values$LVWdEW, breaks=50)
+# hist(edge_values$absdifVW, breaks=50)
+# hist(edge_values$AdifVWmEW, breaks = 50)
+# hist(edge_values$AdifVWdEW, breaks = 50)
+# hist(edge_values$maybe, breaks = 50)
+# 
+
+
+
+evq <- quantile(edge_values$maybe)
+
+
+
+bad_edges <- which(edge_values$maybe > evq[4])
+
+
+g_filt <- delete_edges(g, bad_edges)
+
+# plot(g_filt)
+
+
+print('Primary clustering, any islands sharing any gene will be in the same primary cluster')
+cweak2 <- clusters(mode='weak', g_filt)
+
+
+# considering changing this to leiden algorithm
+print('Secondary clustering: detecting densely connected communities in the graph using the Louvain method')
+print('this should separate very different islands that only share a gene or two')
+clouv2 <- cluster_louvain(g_filt)
+
+
+# generate layout so primary and secondary clusters can be plotted on the same layout
+# PRUNE LOW WEIGHT EDGES HERE #
+
+LO <- layout_nicely(g_filt, dim = 2)
+
+
+# one idea is to calculate the value of an edge based on it's weight (shared genes)
+# and the vertex weights (num genes in each island)
+
+
+
+clust_info <- tibble(island_ID = names(membership(clouv)),
+                     primary_cluster = membership(cweak),
+                     secondary_cluster = membership(clouv), 
+                     tertiary_cluster = membership(cweak2), 
+                     quat_clust = membership(clouv2))
+
+
+
+
+clust_info %>% group_by(quat_clust) %>% tally() %>% arrange(desc(n))
+
+
+
+
+
+
+
+
 
 
 ### FOR PLOTTING NETWORKS AND COLORING BY CLUSTER ###
@@ -390,7 +503,35 @@ p <- plot(x=clouv,
 
 dev.off()
 
+png('./gifrop_out/figures/Secondary_clustering.png', width=600, height=600, res=120, type="cairo")
+p <- plot(x=clouv,
+          y=g,
+          col=membership(clouv),
+          mark.groups = communities(clouv),
+          edge.color = c("black",
+                         "red")[crossing(clouv, g) + 1],
+          vertex.label=NA,
+          layout=LO,
+          main='Graph based clustering, Secondary clusters shown')
 
+
+dev.off()
+
+
+
+png('./gifrop_out/figures/Tertiary_clustering.png', width=600, height=600, res=120, type="cairo")
+p <- plot(x=clouv2,
+          y=g_filt,
+          col=membership(cweak2),
+          mark.groups = communities(cweak2),
+          edge.color = c("black",
+                         "red")[crossing(clouv2, g_filt) + 1],
+          vertex.label=NA,
+          layout=LO,
+          main='Graph based clustering, Secondary clusters shown')
+
+
+dev.off()
 
 # now need to make a clust_info
 ### END INSERT
@@ -409,7 +550,7 @@ clust_info <- clust_info %>%
   left_join(vir_types) %>%
   left_join(plasmid_types) %>%
   left_join(viro_types) %>%
-  select(island_ID, acc_frag, primary_cluster, secondary_cluster, everything(), -genome) %>%
+  select(island_ID, acc_frag, ends_with('cluster'), everything(), -genome) %>%
   write_csv('./gifrop_out/clustered_island_info.csv')
 
 
