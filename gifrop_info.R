@@ -14,6 +14,8 @@ library(pheatmap)
 
 ### ONLY FOR HERE FOR TESTING ###
 # setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan/')
+
+# setwd('/project/fsep_004/jtrachsel/klima/assembly/both/second_flye_polish/pananal/plasmids/pan/')
 # setwd('/home/julian/gifrop_test/pan')
 #getwd()
 
@@ -479,6 +481,7 @@ edge_values <-
 # should probably just pick a cutoff
 #
 # evq <- quantile(edge_values$maybe)
+# hist(edge_values$x2EWdsumVWs)
 bad_edges <- which(edge_values$x2EWdsumVWs < .5)
 
 num_bad <- length(bad_edges)
@@ -501,13 +504,13 @@ g_filt <- delete_edges(g, bad_edges)
 # plot(g_filt)
 
 
-print('Primary clustering, any islands sharing any gene will be in the same primary cluster')
+print('Tertiary clustering, after removing edges, any islands sharing any gene will be in the same primary cluster')
 cweak2 <- clusters(mode='weak', g_filt)
 
 
 # considering changing this to leiden algorithm
-print('Secondary clustering: detecting densely connected communities in the graph using the Louvain method')
-print('this should separate very different islands that only share a gene or two')
+print('Quaternary clustering: detecting densely connected communities in the pruned graph using the Louvain method')
+# print('this should separate very different islands that only share a gene or two')
 clouv2 <- cluster_louvain(g_filt)
 
 
@@ -527,7 +530,7 @@ clust_info <- tibble(island_ID = names(membership(clouv)),
                      primary_cluster = membership(cweak),
                      secondary_cluster = membership(clouv), 
                      tertiary_cluster = membership(cweak2), 
-                     quat_clust = membership(clouv2))
+                     quat_cluster = membership(clouv2))
 
 
 
@@ -645,7 +648,9 @@ gpa_clust <- gpa_gath %>%
             num_Sclusts=length(unique(secondary_cluster)),
             all_islands=list(unique(island_ID)),
             Pcluster = unique(primary_cluster),
-            all_Sclusters=list(unique(secondary_cluster)), 
+            all_Sclusters=list(unique(secondary_cluster)),
+            all_Tclusters=list(unique(tertiary_cluster)), 
+            all_Qclusters=list(unique(quat_cluster)),
             .groups='drop') %>%
 
   right_join(gpa)
@@ -657,7 +662,9 @@ gpa_clust <- gpa_gath %>%
 
 gpa_clust %>%
   mutate(all_islands = map_chr(all_islands, paste, collapse = '|'),
-         all_Sclusters  = map_chr(all_Sclusters , paste, collapse = '|')) %>%
+         all_Sclusters  = map_chr(all_Sclusters , paste, collapse = '|'), 
+         all_Tclusters = map_chr(all_Tclusters, paste, collapse = '|'), 
+         all_Qclusters = map_chr(all_Qclusters, paste, collapse = '|')) %>%
   write_csv('./gifrop_out/pan_with_island_info.csv') %>%
   filter(num_islands > 0) %>%
   write_csv('./gifrop_out/pan_only_islands.csv')
@@ -714,8 +721,9 @@ print('Percent of accessory genome contained within these islands:')
 # looks at how variable the number of genes is for all islands in a cluster
 # it seems like ((max_genes - min_genes) / min_genes) gives a pretty good indication
 # of variability in the cluster
+# THESE ARE THE CLUSTER QUALITIES OF THE quat_clusters NOW
 cluster_qual <-
-  clust_info %>% group_by(primary_cluster, secondary_cluster) %>%
+  clust_info %>% group_by(primary_cluster, secondary_cluster, tertiary_cluster, quat_cluster) %>%
   summarise(mean_genes = mean(num_genes),
             med_genes  = median(num_genes),
             var_genes  = var(num_genes),
@@ -740,63 +748,64 @@ filt_helper <- function(test_vec, int_vec){
 
 
 #######
+# This might be nice but is broken when there are some islands with only 1 gene on them.
 # this makes a heatmap of all the genes in a specified cluster (or vector of clusters) in each ISLAND
-
-gene_by_island_heatmap <- function(gpa_clust, SECONDARY_CLUSTER){
-  # gpa clust need to be the gene_presence_absence.csv file with the added clustering information
-  # in addition the 'secondary_cluster' column needs to be a list formatted column
-  # secondary cluster can be a vector of secondary clusters you want to see together
-  # ISSUE!! currently genes from other sclusts are pulled in, if a gene is in two different sclusts
-  # it will show up in these heatmaps but will not have annotation info with it.
-  # need to include another filtering step to remove islands not belonging to Sclust at hand
-
-
-  anno <- clust_info %>%
-    filter(secondary_cluster %in% SECONDARY_CLUSTER) %>%
-    select(island_ID, island_type) %>%
-    column_to_rownames(var = 'island_ID')
-
-  PA <- gpa_clust %>%
-    filter(map_lgl(.x=all_Sclusters, .f=filt_helper, SECONDARY_CLUSTER)) %>%
-    unnest(cols = all_islands) %>%
-    select(Gene, all_islands) %>%
-    group_by(all_islands, Gene) %>%
-    tally() %>%
-    ungroup() %>%
-    spread(key = Gene, value = n, fill = 0) %>%
-    column_to_rownames(var = 'all_islands') %>%
-    as.matrix() %>%
-    t()   # to get genes as rows and cols as islands
-
-  SECONDARY_CLUSTER <- paste(SECONDARY_CLUSTER, collapse = '_', sep = '_')
-  MAIN=paste('Presence/absence of genes among islands in secondary cluster',SECONDARY_CLUSTER)
-  FILENAME=paste('./gifrop_out/Sclust_', SECONDARY_CLUSTER,'_gene_heatmap.jpeg', sep = '')
-
-  width=ncol(PA)/5
-    if (width < 6){
-    width <- 6
-  }
-
-  height=nrow(PA)/10
-
-  if (height < 6){
-    height <- 6
-  }
-
-
-  pheatmap(PA, filename = FILENAME,
-           height = height,
-           width = width,
-           main=MAIN,
-           annotation_col = anno)
-
-}
-
-imperfect_clusters <- cluster_qual %>%
-  filter(maxmin_divmin > 0) %>%
-  pull(secondary_cluster)
-
-lapply(imperfect_clusters, gene_by_island_heatmap, gpa_clust = gpa_clust)
+# 
+# gene_by_island_heatmap <- function(gpa_clust, QUAT_CLUST){
+#   # gpa clust need to be the gene_presence_absence.csv file with the added clustering information
+#   # in addition the 'secondary_cluster' column needs to be a list formatted column
+#   # secondary cluster can be a vector of secondary clusters you want to see together
+#   # ISSUE!! currently genes from other sclusts are pulled in, if a gene is in two different sclusts
+#   # it will show up in these heatmaps but will not have annotation info with it.
+#   # need to include another filtering step to remove islands not belonging to Sclust at hand
+# 
+# 
+#   anno <- clust_info %>%
+#     filter(quat_cluster %in% QUAT_CLUST) %>%
+#     select(island_ID, island_type) %>%
+#     column_to_rownames(var = 'island_ID')
+# 
+#   PA <- gpa_clust %>%
+#     filter(map_lgl(.x=all_Qclusters, .f=filt_helper, QUAT_CLUST)) %>%
+#     unnest(cols = all_islands) %>%
+#     select(Gene, all_islands) %>%
+#     group_by(all_islands, Gene) %>%
+#     tally() %>%
+#     ungroup() %>%
+#     spread(key = Gene, value = n, fill = 0) %>%
+#     column_to_rownames(var = 'all_islands') %>%
+#     as.matrix() %>%
+#     t()   # to get genes as rows and cols as islands
+# 
+#   QUAT_CLUST <- paste(QUAT_CLUST, collapse = '_', sep = '_')
+#   MAIN=paste('Presence/absence of genes among islands in quaternary cluster',QUAT_CLUST)
+#   FILENAME=paste('./gifrop_out/Qclust_', QUAT_CLUST,'_gene_heatmap.jpeg', sep = '')
+# 
+#   width=ncol(PA)/5
+#     if (width < 6){
+#     width <- 6
+#   }
+# 
+#   height=nrow(PA)/10
+# 
+#   if (height < 6){
+#     height <- 6
+#   }
+# 
+# 
+#   pheatmap(PA, filename = FILENAME,
+#            height = height,
+#            width = width,
+#            main=MAIN,
+#            annotation_col = anno)
+# 
+# }
+# 
+# imperfect_clusters <- cluster_qual %>%
+#   filter(maxmin_divmin > 0) %>%
+#   pull(quat_cluster)
+# 
+# lapply(imperfect_clusters, gene_by_island_heatmap, gpa_clust = gpa_clust)
 # dev.off()
 
 # gene_by_island_heatmap(gpa_clust = gpa_clust, SECONDARY_CLUSTER = 9)
@@ -805,54 +814,57 @@ lapply(imperfect_clusters, gene_by_island_heatmap, gpa_clust = gpa_clust)
 ########
 # gene_by_island_heatmap(gpa_clust = gpa_clust, SECONDARY_CLUSTER = 120)
 
-
-## secondary cluster by genome heatmaps here
-anno <- clust_info %>%
-  select(genome_name, secondary_cluster, island_type) %>%
-  group_by(secondary_cluster) %>%
-  summarise(consensus_type=paste(unique(island_type), sep = '~', collapse = '~')) %>%
-  left_join(cluster_qual) %>%
-  transmute(secondary_cluster = secondary_cluster,
-           # primary_cluster = factor(primary_cluster),
-            cluster_variability = maxmin_divmin,
-            consensus_type = consensus_type) %>%
-
-  column_to_rownames(var = 'secondary_cluster')
-
-
-anno_length <- max(nchar(anno$consensus_type))/4
-
-# this produces a heat map of the number of times islands from each secondary cluster show up in each genome
-sec_clust_by_genome <- clust_info %>%
-  select(genome_name, secondary_cluster) %>%
-  group_by(genome_name, secondary_cluster) %>%
-  tally() %>%
-  spread(key=genome_name, value = n, fill = 0) %>%
-  column_to_rownames(var = 'secondary_cluster') %>%
-  as.matrix()
-
-
-width=(ncol(sec_clust_by_genome)+anno_length)/4
-if (width < 6){
-  width <- 6
-}
-
-height=nrow(sec_clust_by_genome)/10
-
-if (height < 6){
-  height <- 6
-}
-
-
-pheatmap(sec_clust_by_genome,
-         annotation_row = anno,
-         height=height,
-         width=width,
-         filename = './gifrop_out/secondary_clusters_by_genome.jpeg',
-         main='Presence of genomic island clusters in each genome',
-         sub='highly variable clusters are indicated in green',
-         fontsize = 5)
-
-# dev.off()
-
-
+# # THIS NEEDS TO BE UPDATED TO QUAT CLUSTERS
+# ## secondary cluster by genome heatmaps here
+# anno <- clust_info %>%
+#   select(genome_name, secondary_cluster, island_type) %>%
+#   group_by(secondary_cluster) %>%
+#   summarise(consensus_type=paste(unique(island_type), sep = '~', collapse = '~')) %>%
+#   left_join(cluster_qual) %>%
+#   transmute(secondary_cluster = secondary_cluster,
+#            # primary_cluster = factor(primary_cluster),
+#             cluster_variability = maxmin_divmin,
+#             consensus_type = consensus_type) %>%
+# 
+#   column_to_rownames(var = 'secondary_cluster')
+# 
+# 
+# anno_length <- max(nchar(anno$consensus_type))/4
+# 
+# # this produces a heat map of the number of times islands from each secondary cluster show up in each genome
+# sec_clust_by_genome <- clust_info %>%
+#   select(genome_name, secondary_cluster) %>%
+#   group_by(genome_name, secondary_cluster) %>%
+#   tally() %>%
+#   spread(key=genome_name, value = n, fill = 0) %>%
+#   column_to_rownames(var = 'secondary_cluster') %>%
+#   as.matrix()
+# 
+# 
+# width=(ncol(sec_clust_by_genome)+anno_length)/4
+# if (width < 6){
+#   width <- 6
+# }
+# 
+# height=nrow(sec_clust_by_genome)/10
+# 
+# if (height < 6){
+#   height <- 6
+# }
+# 
+# 
+# pheatmap(sec_clust_by_genome,
+#          annotation_row = anno,
+#          height=height,
+#          width=width,
+#          filename = './gifrop_out/secondary_clusters_by_genome.jpeg',
+#          main='Presence of genomic island clusters in each genome',
+#          sub='highly variable clusters are indicated in green',
+#          fontsize = 5)
+# 
+# # dev.off()
+# 
+# # COPY FOR TERTIARY
+# # COPTY FOR QUATERNARY
+# 
+# 
