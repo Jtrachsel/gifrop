@@ -9,13 +9,13 @@ flankingDNA <- as.numeric(args[3])
 stopifnot(exprs =
             {is.numeric(min_genes)
              is.numeric(flankingDNA)
-             min_genes > 0}
+             min_genes >= 1}
           )
 
 
 ### FOR TESTING ONLY ####
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan/')
-# min_genes <- 4
+# setwd('/project/fsep_004/jtrachsel/klima/assembly/both/second_flye_polish/pananal/plasmids/pan/')
+# min_genes <- 1
 # flankingDNA <- 0
 # getwd()
 
@@ -42,8 +42,15 @@ find_islands <- function(roary_gpa, min_genes = 4){
   # This step filters to only non core genes of the pangenome
   # I am suspicious that this is the best way of doing things....
   # I am allowing genes that occur more than 1 time in the same genome to be kept
-  keepers <- gpa$`Avg sequences per isolate` > 1 | gpa$`No. isolates`< max(gpa$`No. isolates`)
-  access_frags <- gpa[keepers,]
+  # I THINK THIS NEEDS TO BE RETHOUGHT
+  
+  
+  
+  tot_isolates <- ncol(roary_gpa) - 14
+  not_present_in_all <- roary_gpa$`No. isolates` < tot_isolates
+  
+  keepers <- roary_gpa$`Avg sequences per isolate` > 1 | not_present_in_all
+  access_frags <- roary_gpa[keepers,]
   ####
   # this step will remove genomes from the analysis which do not
   # contain any non-core genes
@@ -223,7 +230,7 @@ gpa <- read_csv('./gene_presence_absence.csv', col_types = all_cols)
 
 
 ##### call to find islands function
-print('Identifying genomic islands... (streches of consecutive locus tags')
+print('Identifying genomic islands... (streches of consecutive locus tags)')
 master_res <- find_islands(roary_gpa = gpa, min_genes = min_genes)
 
 
@@ -311,20 +318,44 @@ seq_lens <- tibble(seqid=unlist(lapply(genome_seqs_list, names)),
 ## IMPORTANT ##
 # this adds in the seqid lenghts and then if the island occupies greater than
 # 90 % of the whole contig it selects the whole thing.  Islands will be output with Istart and Iend
+# CHANGE THIS SO IF ONLY ISLAND IS TRUE THEN RETURN WHOLE CONTIG
+
 res_4_real <- res_4_real %>%
-  left_join(seq_lens) %>%
+  left_join(seq_lens) 
+
+# fix extra info on locus tags...
+# ALSO IF THE ONLY GENES ON A CONTIG ARE ISLAND GENES THEN SELECT THE WHOLE CONTIG FOR OUTPUT
+res_4_real <- bind_rows(gffs) %>%
+  group_by(seqid) %>%
+  select(seqid, locus_tag) %>%
+  nest() %>%
+  mutate(seqid_loc_tags=list(unlist(data, use.names = FALSE))) %>% 
+  select(-data) %>%
+  right_join(res_4_real) %>%
+  mutate(only_island=map2_lgl(.x = seqid_loc_tags, .y = locus_tags, .f = ~ all(.x %in% .y))) %>% 
   mutate(percent_island=round(island_length/seqid_len*100, 3),
-         Istart=ifelse(percent_island > 90, 1, start),
-         Iend= ifelse(percent_island >90, seqid_len, end))
+         Istart=ifelse(only_island, 1, start),
+         Iend= ifelse(only_island, seqid_len, end))
+
+### debug ###
+# which(colnames(gpa) == 'contig_9-4NG_1')
+# TEST <- gpa[,c(1:14, 519)]
+# TEST2 <- gffs[[which(names(gffs) == 'contig_9-4NG_1')]]
+# this was weird, locus tag that was present in the gff for a contig is missing
+# from the roary results....how did it get filtered out?
+
 
 
 # this block associates each locus tag with an accessory fragment value from roary
+# SOME OF THESE LOCUS TAGS ARE STILL TAB DELIMITED
+# SHOULD I SEPARATE_ROWS?
 acc_frag_tmp <- gpa %>%
   gather(key='genome', value='locus_tags', -c(1:14)) %>%
   select(locus_tags, `Accessory Fragment`) %>%
   transmute(acc_frag = `Accessory Fragment`,
             locus_tags = locus_tags) %>%
-  filter(!is.na(acc_frag) & !is.na(locus_tags))
+  filter(!is.na(acc_frag) & !is.na(locus_tags)) %>% 
+  separate_rows(locus_tags, sep = '\t')
 
 
 
@@ -339,7 +370,7 @@ nesty_res <- res_4_real %>%
   ungroup() %>%
   left_join(genome_seqs)
 
-
+print('Extracting island fastas... this can take a second...')
 nesty_res <- nesty_res %>%
   mutate(islands_mon = map2(.x = data, .y = genome, .f = get_islands))
 
@@ -355,15 +386,16 @@ Biostrings::writeXStringSet(all_islands, './gifrop_out/my_islands/All_islands.fa
 print('collecting island gffs')
 
 
-# fix extra info on locus tags...
-res_4_real <- bind_rows(gffs) %>%
-  group_by(seqid) %>%
-  select(seqid, locus_tag) %>%
-  nest() %>%
-  mutate(seqid_loc_tags=list(unlist(data, use.names = FALSE))) %>% 
-  select(-data) %>%
-  right_join(res_4_real) %>%
-  mutate(only_island=map2_lgl(.x = seqid_loc_tags, .y = locus_tags, .f = ~ all(.x %in% .y)))
+# # fix extra info on locus tags...
+#moved this up
+# res_4_real <- bind_rows(gffs) %>%
+#   group_by(seqid) %>%
+#   select(seqid, locus_tag) %>%
+#   nest() %>%
+#   mutate(seqid_loc_tags=list(unlist(data, use.names = FALSE))) %>% 
+#   select(-data) %>%
+#   right_join(res_4_real) %>%
+#   mutate(only_island=map2_lgl(.x = seqid_loc_tags, .y = locus_tags, .f = ~ all(.x %in% .y)))
 
 
 get_island_gff <- function(locus_tag_vec, gff){
