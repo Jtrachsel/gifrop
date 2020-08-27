@@ -206,6 +206,24 @@ mkdir ./gifrop_out/sequence_data
 echo "making shortened gffs..."
 find . -maxdepth 1 -name '*.gff' | parallel "cat {} |grep -v '#' |grep ID= > ./gifrop_out/sequence_data/{.}_short.gff"
 
+# check for empty shortened gff files
+# quit if any are found
+
+NUM_EMPTY_SHORT_GFFS=$(find -type f -empty -name '*gff' | wc -l)
+EMPTY_SHORT_GFFS=$(find -type f -empty -name '*gff')
+
+if [[ $NUM_EMPTY_SHORT_GFFS -gt 0 ]]
+ then
+     echo 'ERROR!!!!
+     Some of your input files do not contain any annotated genes.
+     Check for very small fasta files in your inputs.
+     These are the offending files:'
+     echo $EMPTY_SHORT_GFFS
+     exit
+  else
+    echo "found $GFFS .gff files"
+fi
+
 echo "extracting fastas from prokka gffs..."
 find . -maxdepth 1 -name '*.gff' | parallel "sed -n '/##FASTA/,\$p' {} | grep -v '##FASTA' > ./gifrop_out/sequence_data/{.}.fna"
 
