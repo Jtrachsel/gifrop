@@ -106,7 +106,7 @@ megares_types <- megares%>%
       mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
       group_by(SEQUENCE) %>%
       summarise(megares_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
-      transmute(island_ID=SEQUENCE, megares_type=res_type)
+      transmute(island_ID=SEQUENCE, megares_type=megares_type)
 
 
 
@@ -176,7 +176,7 @@ island_types <- allbricates %>%
     DATABASE == 'ncbi'          ~ 'AMR',
     DATABASE == 'vfdb'          ~ 'virulence',
     DATABASE == 'PHAGE'         ~ 'phage',
-    DATABASE == 'BacMet'        ~ 'metals_biocides')) %>%
+    DATABASE == 'BacMet'        ~ 'metals/biocides')) %>%
   group_by(island_ID) %>%
   mutate(island_type = paste(DATABASE, sep = '_', collapse = '_')) %>%
   ungroup() %>% select(island_ID, island_type) %>%
