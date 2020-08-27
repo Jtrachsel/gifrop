@@ -26,8 +26,7 @@ suppressPackageStartupMessages(library(igraph))
 # check for cairo?
 
 clust_info <- read_csv('./gifrop_out/clustered_island_info.csv',
-                       col_types = c('ccccccddddcddlcccccc'))
-
+                       col_types = c('ccccccccddddcddlccccccc'))
 
 ### USE ME
 p <- clust_info %>%

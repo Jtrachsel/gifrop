@@ -649,6 +649,7 @@ clust_info <- clust_info %>%
   left_join(vir_types) %>%
   left_join(plasmid_types) %>%
   left_join(viro_types) %>%
+  left_join(megares_types) %>% 
   select(island_ID, acc_frag, ends_with('cluster'), everything(), -genome) %>%
   write_csv('./gifrop_out/clustered_island_info.csv')
 
