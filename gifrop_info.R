@@ -201,7 +201,8 @@ gpa_islands <- gpa_gath %>%
             shortest_island=island_ID[which.min(island_length)],
             len_longest=island_length[which.max(island_length)],
             len_shortest=island_length[which.min(island_length)],
-            all_islands=list(unique(island_ID))) %>%
+            all_islands=list(unique(island_ID)), 
+            .groups='drop') %>%
 
   right_join(gpa)
 
@@ -237,8 +238,19 @@ ipa <- poi %>% select(Gene, all_islands) %>%
   spread(key=Gene, value = n, fill = 0) %>%
   column_to_rownames(var = 'all_islands') %>% as.matrix()
 
-# need to invert the presence/absence because is.na was used and TRUEs mean absent
-# ipa <- !ipa
+#### INSERT COMMUNITY BASED CLUSTERING HERE ####
+# maybe save this to do within primary clusters?
+# comdist <- dist(ipa, method = 'binary')
+# 
+# plot(cmdscale(comdist))
+
+
+###
+
+# if you dont invert this it becomes how many times each gene occurs together in all the islands?
+# USE THIS FOR SEPARATE SUBMODULE ANALYSIS
+# could interpret edges to represent the number of islands that both of the linked genes co-occur within
+
 ipa <- t(ipa)
 # ipa[1:10,1:10]
 # after these two steps the rows are genes and the columns are islands
@@ -271,13 +283,15 @@ cweak <- clusters(mode='weak', g)
 # considering changing this to leiden algorithm
 print('Secondary clustering: detecting densely connected communities in the graph using the Louvain method')
 print('this should separate very different islands that only share a gene or two')
+print('but in reality its still pretty bad, so I am adding some graph pruning steps')
 clouv <- cluster_louvain(g)
 
 
 # generate layout so primary and secondary clusters can be plotted on the same layout
 # PRUNE LOW WEIGHT EDGES HERE #
-
-LO <- layout_nicely(g, dim = 2)
+# JUST MAKE A DAMN DESCISION AND CLEAN UP THIS MESS ALREADY #
+# 
+# LO <- layout_nicely(g, dim = 2)
 
 
 # other clustering options (not all are appropriate)
@@ -397,8 +411,16 @@ edge_values <-
     absdifVW=abs(from_v_weight - to_v_weight), 
     AdifVWmEW=absdifVW - weight, 
     AdifVWdEW=absdifVW / weight, 
-    maybe=LVWmEW/largestVw)
+    maybe=LVWmEW/largestVw, 
+    maybe2=LVWmEW/weight, 
+    sumVWsm2xEW=(to_v_weight + from_v_weight)- (2*weight), 
+    sumVWsd2xEW=(to_v_weight + from_v_weight) / (2*weight), 
+    x2EWdsumVWs=(2*weight)/(to_v_weight + from_v_weight))
 
+
+
+# Largest Vertex minus edge weight divided by edge weight
+# what proportion of the 
 # hist(edge_values$weight, breaks=50)
 # hist(edge_values$largestVw, breaks=50)
 # hist(edge_values$LVWmEW, breaks=50)
@@ -407,15 +429,71 @@ edge_values <-
 # hist(edge_values$AdifVWmEW, breaks = 50)
 # hist(edge_values$AdifVWdEW, breaks = 50)
 # hist(edge_values$maybe, breaks = 50)
+# hist(edge_values$maybe2, breaks = 50)
+# 
+# hist(edge_values$sumVWsm2xEW, breaks = 50)
+# hist(edge_values$sumVWsd2xEW, breaks = 500, xlim = c(0,10))
+# 
+# hist(edge_values$x2EWdsumVWs, breaks = 100)
+# # 
+# # 
+# min(edge_values$x2EWdsumVWs)
+# max(edge_values$x2EWdsumVWs)
+# 
+# library(Rtsne)
+# 
+# # 
+# ev4t <- edge_values %>%
+#   tidyr::unite(from, to, from_name, to_name, sep='~', col=ID) %>%
+#   column_to_rownames(var='ID') %>% as.matrix() %>% scale()
+# 
+# # 
+# 
+# ev4t %>% count(ID) %>% arrange(desc(n))
+# Rtsne(unique(ev4t))
+
+# plot(cmdscale(dist(ev4t)))
+
+
+# scale(ev4t)
+# pca1 <- princomp(ev4t)
+# pca2 <- prcomp(ev4t)
+# 
+# plot(pca1$scores[,1],pca1$scores[,2] )
+# plot(pca1$scores[,1],pca1$scores[,2] )
+# 
+# tidyr::unite()
+
+# min(edge_values$sumVWsd2xEW)
+# min(edge_values$sumVWsm2xEW)
+# 
+# quantile(edge_values$sumVWsd2xEW)
+# 
+# hist(log(edge_values$sumVWsm2xEW), breaks = 50)
+# hist(log(edge_values$sumVWsd2xEW), breaks = 50)
+
+# quantile(edge_values$x2EWdsumVWs)
 # 
 
 
+# should probably just pick a cutoff
+#
+# evq <- quantile(edge_values$maybe)
+bad_edges <- which(edge_values$x2EWdsumVWs < .5)
 
-evq <- quantile(edge_values$maybe)
+num_bad <- length(bad_edges)
+tot_edge <- nrow(edge_values)
+percent_bad <- round((num_bad/tot_edge) *100)
 
 
+prune_message <- paste('removing ',
+                       num_bad,
+                       ' edges from the graph. This is ',
+                       percent_bad,
+                       '% of the total edges', 
+                       sep='')
 
-bad_edges <- which(edge_values$maybe > evq[4])
+print(prune_message)
 
 
 g_filt <- delete_edges(g, bad_edges)
@@ -445,6 +523,7 @@ LO <- layout_nicely(g_filt, dim = 2)
 
 
 clust_info <- tibble(island_ID = names(membership(clouv)),
+                     #island_ID2 = names(membership(clouv2)),
                      primary_cluster = membership(cweak),
                      secondary_cluster = membership(clouv), 
                      tertiary_cluster = membership(cweak2), 
@@ -453,85 +532,85 @@ clust_info <- tibble(island_ID = names(membership(clouv)),
 
 
 
-clust_info %>% group_by(quat_clust) %>% tally() %>% arrange(desc(n))
-
-
-
-
-
-
-
-
-
-
-### FOR PLOTTING NETWORKS AND COLORING BY CLUSTER ###
-# library(RColorBrewer)
-#
-# node.cols <- brewer.pal(max(c(3, partition)),"Pastel1")[partition]
-# plot(graph_object, vertex.color = node.cols)
-
-### clustering plots...
-
-# TODO # Make better clustering figures.
-# maybe make individual figures for difficult clusters
-
-png('./gifrop_out/figures/Primary_clustering.png', width=600, height=600, res=120, type="cairo")
-p <- plot(x=clouv,
-          y=g,
-          col=membership(cweak),
-          mark.groups = communities(cweak),
-          edge.color = c("black",
-                         "red")[crossing(clouv, g) + 1],
-          vertex.label=NA,
-          layout=LO,
-          main='Graph based clustering, Primary clusters shown')
-
-
-dev.off()
-
-png('./gifrop_out/figures/Secondary_clustering.png', width=600, height=600, res=120, type="cairo")
-p <- plot(x=clouv,
-          y=g,
-          col=membership(clouv),
-          mark.groups = communities(clouv),
-          edge.color = c("black",
-                         "red")[crossing(clouv, g) + 1],
-          vertex.label=NA,
-          layout=LO,
-          main='Graph based clustering, Secondary clusters shown')
-
-
-dev.off()
-
-png('./gifrop_out/figures/Secondary_clustering.png', width=600, height=600, res=120, type="cairo")
-p <- plot(x=clouv,
-          y=g,
-          col=membership(clouv),
-          mark.groups = communities(clouv),
-          edge.color = c("black",
-                         "red")[crossing(clouv, g) + 1],
-          vertex.label=NA,
-          layout=LO,
-          main='Graph based clustering, Secondary clusters shown')
-
-
-dev.off()
-
-
-
-png('./gifrop_out/figures/Tertiary_clustering.png', width=600, height=600, res=120, type="cairo")
-p <- plot(x=clouv2,
-          y=g_filt,
-          col=membership(cweak2),
-          mark.groups = communities(cweak2),
-          edge.color = c("black",
-                         "red")[crossing(clouv2, g_filt) + 1],
-          vertex.label=NA,
-          layout=LO,
-          main='Graph based clustering, Secondary clusters shown')
-
-
-dev.off()
+# clust_info %>% group_by(quat_clust) %>% tally() %>% arrange(desc(n))
+# 
+# 
+# # I thnk i stopped messing with stuff here #
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# ### FOR PLOTTING NETWORKS AND COLORING BY CLUSTER ###
+# # library(RColorBrewer)
+# #
+# # node.cols <- brewer.pal(max(c(3, partition)),"Pastel1")[partition]
+# # plot(graph_object, vertex.color = node.cols)
+# 
+# ### clustering plots...
+# 
+# # TODO # Make better clustering figures.
+# # maybe make individual figures for difficult clusters
+# 
+# png('./gifrop_out/figures/Primary_clustering.png', width=600, height=600, res=120, type="cairo")
+# p <- plot(x=clouv,
+#           y=g,
+#           col=membership(cweak),
+#           mark.groups = communities(cweak),
+#           edge.color = c("black",
+#                          "red")[crossing(clouv, g) + 1],
+#           vertex.label=NA,
+#           layout=LO,
+#           main='Graph based clustering, Primary clusters shown')
+# 
+# 
+# dev.off()
+# 
+# png('./gifrop_out/figures/Secondary_clustering.png', width=600, height=600, res=120, type="cairo")
+# p <- plot(x=clouv,
+#           y=g,
+#           col=membership(clouv),
+#           mark.groups = communities(clouv),
+#           edge.color = c("black",
+#                          "red")[crossing(clouv, g) + 1],
+#           vertex.label=NA,
+#           layout=LO,
+#           main='Graph based clustering, Secondary clusters shown')
+# 
+# 
+# dev.off()
+# 
+# png('./gifrop_out/figures/Secondary_clustering.png', width=600, height=600, res=120, type="cairo")
+# p <- plot(x=clouv,
+#           y=g,
+#           col=membership(clouv),
+#           mark.groups = communities(clouv),
+#           edge.color = c("black",
+#                          "red")[crossing(clouv, g) + 1],
+#           vertex.label=NA,
+#           layout=LO,
+#           main='Graph based clustering, Secondary clusters shown')
+# 
+# 
+# dev.off()
+# 
+# 
+# 
+# png('./gifrop_out/figures/Tertiary_clustering.png', width=600, height=600, res=120, type="cairo")
+# p <- plot(x=clouv2,
+#           y=g_filt,
+#           col=membership(cweak2),
+#           mark.groups = communities(cweak2),
+#           edge.color = c("black",
+#                          "red")[crossing(clouv2, g_filt) + 1],
+#           vertex.label=NA,
+#           layout=LO,
+#           main='Graph based clustering, Secondary clusters shown')
+# 
+# 
+# dev.off()
 
 # now need to make a clust_info
 ### END INSERT
@@ -566,7 +645,8 @@ gpa_clust <- gpa_gath %>%
             num_Sclusts=length(unique(secondary_cluster)),
             all_islands=list(unique(island_ID)),
             Pcluster = unique(primary_cluster),
-            all_Sclusters=list(unique(secondary_cluster))) %>%
+            all_Sclusters=list(unique(secondary_cluster)), 
+            .groups='drop') %>%
 
   right_join(gpa)
 
@@ -646,8 +726,8 @@ cluster_qual <-
             maxmin_divmin   = (max_genes - min_genes)/min_genes)
 
 
-# variable_clusters <- cluster_qual %>% filter(maxmin_divmin != 0)
 
+# variable_clusters <- cluster_qual %>% filter(maxmin_divmin != 0)
 
 
 filt_helper <- function(test_vec, int_vec){
