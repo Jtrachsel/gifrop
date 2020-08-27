@@ -66,8 +66,8 @@ vir_types <- vfdbs%>%
             .groups='drop') %>%
   transmute(island_ID=SEQUENCE, vir_type=vir_type)
 
-# read in resfinder results (should switch to ncbi as default?)
-resfiles <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'resfinder', full.names = TRUE)
+# read in ncbi resistance results 
+resfiles <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'ncbi', full.names = TRUE)
 resfinders <- lapply(resfiles, read_tsv, col_types = c('ccddcccccddcccc'))
 resfinders <- bind_rows(resfinders) %>% filter(`%COVERAGE` > 66)
 
@@ -95,10 +95,24 @@ viro_types <- virofinders%>%
   transmute(island_ID=SEQUENCE, viro_type=viro_type)
 
 
+# megares/bacmet : metals and biocides
+
+megares_files <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'megares', full.names = TRUE)
+
+megares <- bind_rows(lapply(megares_files, read_tsv, col_types = c('ccddcccccddcccc'))) %>%
+      filter(`%COVERAGE` > 66)
+
+megares_types <- megares%>%
+      mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
+      group_by(SEQUENCE) %>%
+      summarise(megares_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
+      transmute(island_ID=SEQUENCE, megares_type=res_type)
+
+
 
 #
 
-allbricates <- bind_rows(plasfinders, vfdbs, resfinders, virofinders) %>%
+allbricates <- bind_rows(plasfinders, vfdbs, resfinders, virofinders, megares) %>%
   mutate(island_ID=SEQUENCE) %>%
   select(island_ID, everything(), -SEQUENCE)
 
@@ -154,13 +168,16 @@ res_info <- allbricates %>%
 # this block creates a broad 'island type'
 # if an island has a hit to one of the three database types it gets assigned that type
 # all types are then concatenated to form the final island type
-island_types <- allbricates %>% select(island_ID, DATABASE) %>% unique() %>%
+island_types <- allbricates %>% 
+  select(island_ID, DATABASE) %>% 
+  unique() %>%
   mutate(DATABASE=case_when(
     DATABASE == 'plasmidfinder' ~ 'plasmid',
-    DATABASE %in% c('ncbi', 'MEGARes')     ~ 'AMR',
+    DATABASE == 'ncbi'          ~ 'AMR',
     DATABASE == 'vfdb'          ~ 'virulence',
-    DATABASE == 'PHAGE'          ~ 'phage',
-  )) %>% group_by(island_ID) %>%
+    DATABASE == 'PHAGE'         ~ 'phage',
+    DATABASE == 'BacMet'        ~ 'metals_biocides')) %>%
+  group_by(island_ID) %>%
   mutate(island_type = paste(DATABASE, sep = '_', collapse = '_')) %>%
   ungroup() %>% select(island_ID, island_type) %>%
   unique() %>%

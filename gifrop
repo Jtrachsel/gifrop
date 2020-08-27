@@ -261,20 +261,20 @@ rm All_islands.fasta
 echo 'RUNNING ABRICATE ON THE ISLANDS'
 mkdir abricate
 
-find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db ncbi {} > ./abricate/{.}.resfinder" >> abricate.log 2>&1
+find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db ncbi {} > ./abricate/{.}.ncbi" >> abricate.log 2>&1
 find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db vfdb {} > ./abricate/{.}.vfdb" >> abricate.log 2>&1
 find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db plasmidfinder {} > ./abricate/{.}.plasmidfinder" >> abricate.log 2>&1
 find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db viroseqs {} > ./abricate/{.}.virofinder" >> abricate.log 2>&1
-
+find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1
 
 # look for megares database, if found, run abricate with it.
-MEGARES=$(abricate --list |grep megares2 |wc -l)
+#MEGARES=$(abricate --list |grep megares2 |wc -l)
 
-if [[ "$MEGARES" == 1 ]]
-  then
-  echo 'MEGARes database found for abricate'
-  find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1;
-fi
+#if [[ "$MEGARES" == 1 ]]
+#  then
+#  echo 'MEGARes database found for abricate'
+#  find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1;
+#fi
 
 
 cd ..
