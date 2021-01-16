@@ -118,40 +118,6 @@ allbricates <- bind_rows(plasfinders, vfdbs, resfinders, virofinders, megares) %
 
 
 
-# if megares block
-# now that abricate supports megares, need to
-# rethink this...
-# 3-31-2020  --  abricate implementation of megares db doesnt include metal resistance gene
-# which was the whole reason for using megares.
-# currently still need my custom abricate db....
-
-# noticed some issues where ncbi or resfinder has better hits than megares
-# going to strip just the metal and biocide genes from the megares db
-# then get AMR from ncbi database and just metal biocide from megares
-
-# megares_files <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'megares', full.names = TRUE)
-# 
-# if (length(megares_files) > 0){
-#   print('yes! megaresfiles')
-#   megares <- bind_rows(lapply(megares_files, read_tsv, col_types = c('ccddcccccddcccc'))) %>%
-#     filter(`%COVERAGE` > 66)
-# 
-#   res_types <- megares%>%
-#     mutate(gene_percent=paste(GENE,'<',  `%IDENTITY`,'%', '>', sep = '')) %>%
-#     group_by(SEQUENCE) %>%
-#     summarise(res_type=paste(gene_percent, sep = '~', collapse = '~')) %>%
-#     transmute(island_ID=SEQUENCE, res_type=res_type)
-# 
-#     allbricates <- bind_rows(megares, vfdbs, plasfinders, virofinders)%>%
-#       mutate(island_ID=SEQUENCE) %>%
-#       select(island_ID, everything(), -SEQUENCE)
-# 
-#   print('using megares database instead of resfinder')
-# }
-# 
-# 
-
-# # end if megares block
 
 
 print('Done reading in abricate files')
