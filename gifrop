@@ -1,7 +1,7 @@
 #!/bin/bash
 #set -e # terminate the script immediately upon errors
 scriptName='gifrop'
-version='0.0.4'
+version='0.0.5'
 
 # this line returns the directory that this script resides in
 # it is used to help determine the paths of the R scripts
@@ -234,7 +234,7 @@ mkdir ./gifrop_out/my_islands
 # RUN Island_ID_out.R
 
 echo "EXECUTING Rscript 'gifrop_id.R'"
-#Rscript "$DIR"/gifrop_id.R $exdir 2>&1 | tee -a gifrop.log
+#Rscript "$DIR"/gifrop_id2.R $exdir 2>&1 | tee -a gifrop.log
 
 # this will be the call when i get id to take other args
 # arg[1] is working directory
