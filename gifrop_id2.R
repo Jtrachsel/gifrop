@@ -17,9 +17,9 @@ stopifnot(exprs =
 # flankingDNA <-1000
 # getwd()
 
-
-# Start the clock!
-ptm <- proc.time()
+# 
+# # Start the clock!
+# ptm <- proc.time()
 
 
 ###
@@ -30,11 +30,11 @@ suppressPackageStartupMessages(library(tidyr, quietly = TRUE, warn.conflicts = F
 suppressPackageStartupMessages(library(readr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
 print('done loading packages')
-
-# Stop the clock
-package_loading_time <- proc.time() - ptm
-print(package_loading_time)
-# Functions #
+# 
+# # Stop the clock
+# package_loading_time <- proc.time() - ptm
+# print(paste("time to load packaes: ", package_loading_time))
+# # Functions #
 
 
 ### get_ ###

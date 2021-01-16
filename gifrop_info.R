@@ -8,7 +8,6 @@ suppressPackageStartupMessages(library(tibble, quietly = TRUE, warn.conflicts = 
 suppressPackageStartupMessages(library(ggplot2, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(igraph))
-library(pheatmap)
 
 
 
@@ -16,7 +15,7 @@ library(pheatmap)
 # setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan/')
 
 # setwd('/project/fsep_004/jtrachsel/klima/assembly/both/second_flye_polish/pananal/plasmids/pan/')
-# setwd('/home/Julian.Trachsel/TEST')
+# setwd('./test_data3')
 #getwd()
 
 ## read in island info data ##
@@ -82,7 +81,7 @@ res_types <- resfinders%>%
 # virotypes
 
 
-virofiles <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'virofinder', full.names = TRUE)
+virofiles <- list.files(path = './gifrop_out/my_islands/abricate/', pattern = 'viroseqs', full.names = TRUE)
 virofinders <- lapply(virofiles, read_tsv, col_types = c('ccddcccccddcccc')) # check this coltypes
 virofinders <- bind_rows(virofinders) %>% filter(`%COVERAGE` > 66)
 
@@ -111,7 +110,7 @@ megares_types <- megares%>%
 
 
 #
-
+# might need to check in on things here # in case island_IDs got garbled somehow
 allbricates <- bind_rows(plasfinders, vfdbs, resfinders, virofinders, megares) %>%
   mutate(island_ID=SEQUENCE) %>%
   select(island_ID, everything(), -SEQUENCE)
