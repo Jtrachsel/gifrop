@@ -19,6 +19,8 @@ stopifnot(exprs =
 # getwd()
 
 
+# Start the clock!
+ptm <- proc.time()
 
 
 ###
@@ -30,9 +32,12 @@ suppressPackageStartupMessages(library(readr, quietly = TRUE, warn.conflicts = F
 suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(Biostrings, quietly = TRUE, warn.conflicts = FALSE))
 # maybe dont load BSgenome just ::: the function
-suppressPackageStartupMessages(library(BSgenome, quietly = TRUE, warn.conflicts = FALSE))
+# suppressPackageStartupMessages(library(BSgenome, quietly = TRUE, warn.conflicts = FALSE))
 print('done loading packages')
 
+# Stop the clock
+package_loading_time <- proc.time() - ptm
+print(package_loading_time)
 # Functions #
 
 # # Should split this up into a couple of functions, 
@@ -252,7 +257,7 @@ get_islands <- function(island_info, genome){
   locs <- island_info %>% select(seqid, Istart, Iend) %>%
     transmute(chrom=seqid, start=Istart, end=Iend)
 
-  islands <- getSeq(genome, as(locs, "GRanges")) # this needs Biostrings and BSgenome loaded
+  islands <- BSgenome::getSeq(genome, as(locs, "GRanges")) # this needs Biostrings and BSgenome loaded
   names(islands) <- island_info$island_ID
 
   return(islands)
@@ -465,6 +470,8 @@ res_4_real <- bind_rows(gffs) %>%
 # this block associates each locus tag with an accessory fragment value from roary
 # SOME OF THESE LOCUS TAGS ARE STILL TAB DELIMITED
 # SHOULD I SEPARATE_ROWS?
+# dont think i need this?
+
 acc_frag_tmp <- gpa %>%
   gather(key='genome', value='locus_tags', -c(1:14)) %>%
   select(locus_tags, `Accessory Fragment`) %>%
@@ -564,7 +571,8 @@ island_info <-
   res_4_real %>%
   ungroup() %>%
   tidyr::unnest(cols = 'locus_tags') %>%
-  left_join(acc_frag_tmp) %>% group_by(island_ID) %>%
+  left_join(acc_frag_tmp) %>% 
+  group_by(island_ID) %>%
   summarise(seqid=unique(seqid),
             genome_name=unique(genome_name),
             start=unique(start),
@@ -700,7 +708,7 @@ tst <-
   group_by(genome, seqid) %>% 
   # mutate(seqid_len=max(end))
   nest() %>% 
-  mutate(ISLANDS=map(.x = data, .f = ID_islands)) %>% # identifies strings of consecutive non-core genes
+  mutate(ISLANDS=map(.x = data, .f = ID_islands)) %>% 
   filter(!map_lgl(ISLANDS, is.null)) %>%              # NULL values generated when min_genes removes small islands
   mutate(island_IDs=map(.x = ISLANDS, enframe_island_list)) %>% # converts the detected island list to a tibble
   select(-ISLANDS) %>% 
@@ -720,5 +728,33 @@ tst <-
 
 
 
-colnames(tst)
+tst %>% 
+  mutate(island_ID = paste(seqid, island_id, sep = '_'), 
+         
+         )
+island_info
+
+
+#### THIS IS THE ORIGNINAL FOR COMPARISON
+island_info <- 
+  res_4_real %>%
+  ungroup() %>%
+  tidyr::unnest(cols = 'locus_tags') %>%
+  left_join(acc_frag_tmp) %>% 
+  group_by(island_ID) %>%
+  summarise(seqid=unique(seqid),
+            genome_name=unique(genome_name),
+            start=unique(start),
+            end=unique(end),
+            island_length = unique(island_length),
+            num_genes=unique(num_genes),
+            locus_tags=paste(locus_tags, collapse = '|'),
+            seqid_len = unique(seqid_len),
+            percent_island = unique(percent_island),
+            only_island = unique(only_island),
+            Istart=unique(Istart),
+            Iend=unique(Iend),
+            acc_frag = paste(unique(acc_frag), collapse = '|')) %>%
+  select(-Istart, -Iend)
+
 
