@@ -724,26 +724,26 @@ print('Percent of accessory genome contained within these islands:')
 # it seems like ((max_genes - min_genes) / min_genes) gives a pretty good indication
 # of variability in the cluster
 # THESE ARE THE CLUSTER QUALITIES OF THE quat_clusters NOW
-cluster_qual <-
-  clust_info %>% group_by(primary_cluster, secondary_cluster, tertiary_cluster, quat_cluster) %>%
-  summarise(mean_genes = mean(num_genes),
-            med_genes  = median(num_genes),
-            var_genes  = var(num_genes),
-            sd_genes   = sd(num_genes),
-            min_genes  = min(num_genes),
-            max_genes  = max(num_genes),
-            num_occur  = length(num_genes),
-            maxmin_divmin   = (max_genes - min_genes)/min_genes)
-
-
-
-# variable_clusters <- cluster_qual %>% filter(maxmin_divmin != 0)
-
-
-filt_helper <- function(test_vec, int_vec){
-    res <- any(int_vec %in% test_vec)
-    return(res)
-}
+# cluster_qual <-
+#   clust_info %>% group_by(primary_cluster, secondary_cluster, tertiary_cluster, quat_cluster) %>%
+#   summarise(mean_genes = mean(num_genes),
+#             med_genes  = median(num_genes),
+#             var_genes  = var(num_genes),
+#             sd_genes   = sd(num_genes),
+#             min_genes  = min(num_genes),
+#             max_genes  = max(num_genes),
+#             num_occur  = length(num_genes),
+#             maxmin_divmin   = (max_genes - min_genes)/min_genes)
+# 
+# 
+# 
+# # variable_clusters <- cluster_qual %>% filter(maxmin_divmin != 0)
+# 
+# 
+# filt_helper <- function(test_vec, int_vec){
+#     res <- any(int_vec %in% test_vec)
+#     return(res)
+# }
 
 
 

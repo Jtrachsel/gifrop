@@ -111,7 +111,7 @@ that were used to run roary.
 
 Example:
 
-gifrop --get_islands --min_genes 5 --threads 16
+gifrop --get_islands --min_genes 5 --threads 16 --split_islands
 
 
 "
@@ -258,29 +258,26 @@ echo "DONE EXECUTING 'gifrop_id.R'"
 
 cd ./gifrop_out/my_islands
 
-# split multifasta All_islands into one fasta per island #
-awk '/^>/ {F = substr($0,2)".fasta"} {print > F}' All_islands.fasta
-rm All_islands.fasta
+
+
+
+if [[ $SPLIT_ISLANDS -eq 1 ]]
+ then
+    # split multifasta All_islands into one fasta per island #
+    awk '/^>/ {F = substr($0,2)".fasta"} {print > F}' All_islands.fasta
+fi
+
+#rm All_islands.fasta
 
 # run abricate on islands
 echo 'RUNNING ABRICATE ON THE ISLANDS'
 mkdir abricate
 
-find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db ncbi {} > ./abricate/{.}.ncbi" >> abricate.log 2>&1
-find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db vfdb {} > ./abricate/{.}.vfdb" >> abricate.log 2>&1
-find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db plasmidfinder {} > ./abricate/{.}.plasmidfinder" >> abricate.log 2>&1
-find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db viroseqs {} > ./abricate/{.}.virofinder" >> abricate.log 2>&1
-find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1
-
-# look for megares database, if found, run abricate with it.
-#MEGARES=$(abricate --list |grep megares2 |wc -l)
-
-#if [[ "$MEGARES" == 1 ]]
-#  then
-#  echo 'MEGARes database found for abricate'
-#  find . -maxdepth 1 -name '*.fasta' | parallel "abricate --db megares2 {} > ./abricate/{.}.megares" >> abricate.log 2>&1;
-#fi
-
+abricate --threads $THREADS --db ncbi All_islands.fasta > ./abricate/All_islands.ncbi
+abricate --threads $THREADS --db vfdb All_islands.fasta > ./abricate/All_islands.vfdb
+abricate --threads $THREADS --db plasmidfinder All_islands.fasta > ./abricate/All_islands.plasmidfinder
+abricate --threads $THREADS --db viroseqs All_islands.fasta > ./abricate/All_islands.viroseqs
+abricate --threads $THREADS --db megares2 All_islands.fasta > ./abricate/All_islands.megares2
 
 cd ..
 
