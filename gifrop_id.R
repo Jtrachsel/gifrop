@@ -76,7 +76,7 @@ remove_core_genome <- function(roary_gpa){
 
 
 # ID_islands should be called in a mutate(map()) situation on the nested dataframe
-ID_islands <- function(datfrm, min_genes = min_genes){
+ID_islands <- function(datfrm, min_genes){
   # island_names <- paste(datfrm)
   step0 <- datfrm$loc_tag_order
   names(step0) <- datfrm$locus_tag
@@ -234,7 +234,7 @@ islands_pangenome_gff <-
   left_join(loc_tag_orders) %>%            # brings in locus_tag orders, no longer converting locus tags to numeric
   group_by(genome, seqid) %>%              
   nest() %>% 
-  mutate(ISLANDS=map(.x = data, .f = ID_islands)) %>% 
+  mutate(ISLANDS=map(.x = data, .f = ID_islands, min_genes = min_genes)) %>% 
   filter(!map_lgl(ISLANDS, is.null)) %>%              # NULL values generated when min_genes removes small islands
   mutate(island_IDs=map(.x = ISLANDS, enframe_island_list)) %>% # converts the detected island list to a tibble
   select(-ISLANDS) %>% 
