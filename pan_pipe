@@ -116,6 +116,20 @@ if [[ $ERR -eq 1 ]]
 fi
 
 
+### CHECK FOR '.fna' FILES HERE: ###
+
+
+numFNA=$(ls *fna |wc -l)
+
+if [[ $numFNA -lt 2 ]]
+ then
+     echo "less than two fastas detected. Cannot calculate pangenome with less than two fastas"
+     echo "Please make sure your fasta files end in '.fna'"
+
+     exit
+fi
+
+
 
 
 ##### annotate all fasta formatted genomes with prokka #####
