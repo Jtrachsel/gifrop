@@ -19,7 +19,7 @@ suppressPackageStartupMessages(library(igraph))
 #getwd()
 
 ## read in island info data ##
-res_4_real <- read_csv('./gifrop_out/my_islands/island_info.csv', col_types = c('cccddddcddlc'))
+res_4_real <- read_csv('./gifrop_out/my_islands/island_info.csv', col_types = c('cccddddcddlcc'))
 
 
 # current_directory <- getwd()

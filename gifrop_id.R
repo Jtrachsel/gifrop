@@ -12,7 +12,7 @@ stopifnot(exprs =
           )
 
 ### FOR TESTING ONLY ####
-# setwd('./test_data3')
+# setwd('./test_data3/')
 # min_genes <- 4
 # flankingDNA <-1000
 # getwd()
@@ -278,7 +278,8 @@ island_info <-
             Iend=case_when(
               only_island ~ as.numeric(unique(seqid_len)),   # was having int vs double conflicts here
               !only_island ~ max(end)),
-            acc_frag = paste(unique(`Accessory Fragment`), collapse = '|')) 
+            acc_frag = paste(unique(`Accessory Fragment`), collapse = '|'), 
+            genes=paste(Gene, collapse = '|')) 
 
 
 island_info %>% 
