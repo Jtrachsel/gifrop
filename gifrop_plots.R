@@ -5,7 +5,7 @@ setwd(args[1])
 
 ### FOR TESTING ONLY ###
 # setwd('~/Documents/IslandR/test_data/pan')
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data/pan/')
+# setwd('~/Documents/gifrop_examples/test3/pan/')
 
 
 
@@ -26,7 +26,7 @@ suppressPackageStartupMessages(library(igraph))
 # check for cairo?
 
 clust_info <- read_csv('./gifrop_out/clustered_island_info.csv',
-                       col_types = c('ccccccccddddcddlccccccc'))
+                       col_types = c('ccccccccddddcddlcccccccc'))
 
 ### USE ME
 p <- clust_info %>%
