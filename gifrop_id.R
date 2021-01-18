@@ -17,11 +17,6 @@ stopifnot(exprs =
 # flankingDNA <-1000
 # getwd()
 
-# 
-# # Start the clock!
-# ptm <- proc.time()
-
-
 ###
 # load packages
 print('loading packages')
@@ -31,9 +26,6 @@ suppressPackageStartupMessages(library(readr, quietly = TRUE, warn.conflicts = F
 suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
 print('done loading packages')
 # 
-# # Stop the clock
-# package_loading_time <- proc.time() - ptm
-# print(paste("time to load packaes: ", package_loading_time))
 # # Functions #
 
 
@@ -127,29 +119,6 @@ gff_parse3 <- function(path){
                    remove = FALSE) %>%
     mutate(locus_tag = sub('([A-Za-z]_[0-9]+).*', '\\1', locus_tag))
   return(gff)
-}
-
-
-
-
-get_gffs <- function(island_info, gff){
-  # using the island info dataframe, this function
-  # extracts the annotation data for each island from the corresponding
-  # gff
-  
-  # uses helper function, get_island_gff
-  island_gffs <- map(island_info$locus_tags, .f = get_island_gff, gff)
-  names(island_gffs) <- island_info$island_ID
-  return(island_gffs)
-}
-
-
-get_island_gff <- function(locus_tag_vec, gff){
-  #this little guy should take the locus tag column from the island info dataframe
-  # and return the corresponding annotations from the gff file for the genome,
-  # basically a little mini gff that only covers the island
-  gff[gff$locus_tag %in% locus_tag_vec,]
-  
 }
 
 
@@ -314,6 +283,28 @@ Biostrings::writeXStringSet(all_islands, './gifrop_out/my_islands/All_islands.fa
 #IF BLOCK HERE?
 # #### OUTPUT GFFS HERE ####
 # 
+
+
+# get_gffs <- function(island_info, gff){
+#   # using the island info dataframe, this function
+#   # extracts the annotation data for each island from the corresponding
+#   # gff
+#   
+#   # uses helper function, get_island_gff
+#   island_gffs <- map(island_info$locus_tags, .f = get_island_gff, gff)
+#   names(island_gffs) <- island_info$island_ID
+#   return(island_gffs)
+# }
+# 
+# 
+# get_island_gff <- function(locus_tag_vec, gff){
+#   #this little guy should take the locus tag column from the island info dataframe
+#   # and return the corresponding annotations from the gff file for the genome,
+#   # basically a little mini gff that only covers the island
+#   gff[gff$locus_tag %in% locus_tag_vec,]
+#   
+# }
+
 # # now need way to incorporate ID_non_island_loc_tags
 # print('collecting island gffs')
 # 
