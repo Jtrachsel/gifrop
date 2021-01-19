@@ -128,6 +128,26 @@ enframe_island_list <- function(island_list){
     unnest(cols = locus_tag)
 }
 
+ID_flanking_genes <- function(datfrm, seqid_loc_tags){
+  extract_these <- 
+    datfrm %>% 
+    summarise(flank_low_ord=min(loc_tag_order)-1, 
+              flank_hig_ord=max(loc_tag_order)+1)
+  # browser()
+  loc_tag_low <- seqid_loc_tags$locus_tag[which(seqid_loc_tags$loc_tag_order == extract_these$flank_low_ord)]
+  loc_tag_hig <- seqid_loc_tags$locus_tag[which(seqid_loc_tags$loc_tag_order == extract_these$flank_hig_ord)]
+  
+  # sometimes there are not flanking genes (contig boundaries, plasmids etc)
+  if (identical(loc_tag_low, character(0))){
+    loc_tag_low <- 'none'
+  }
+  if (identical(loc_tag_hig, character(0))){
+    loc_tag_hig <- 'none'
+  }
+  
+  return(paste(loc_tag_low, loc_tag_hig, sep = '|'))
+  
+}
 
 
 # done with functions #
@@ -161,17 +181,6 @@ gff_names <- sub('./gifrop_out/sequence_data/(.*)_short.gff','\\1',gff_files)
 gff_names <- gsub('/?','',gff_names)
 names(gffs) <- gff_names
 
-# this tibble is to help determine if an island occupies the whole contig
-seq_loctag_tib <- 
-  tibble::enframe(gffs, name = 'genome', value='gff_df') %>% 
-  unnest(cols = gff_df) %>% 
-  select(genome, seqid, locus_tag) %>% 
-  group_by(genome, seqid) %>% 
-  nest() %>% 
-  mutate(seqid_loc_tags=map(.x = data, .f = pull, locus_tag)) %>% 
-  ungroup() %>% 
-  select(genome, seqid, seqid_loc_tags)
-
 
 # this is an important line
 # helps solve issue #1, where some islands are inappropriately interrupted
@@ -181,6 +190,24 @@ seq_loctag_tib <-
 # tRNA rRNA type locus tags being filtered out.
 loc_tag_orders <- bind_rows(lapply(gffs, get_loc_tag_order))
 
+
+
+# this tibble is to help determine if an island occupies the whole contig
+# also used to extract flanking locus tags ( core genes that border islands)
+seq_loctag_tib <- 
+  tibble::enframe(gffs, name = 'genome', value='gff_df') %>% 
+  unnest(cols = gff_df) %>% 
+  select(genome, seqid, locus_tag) %>% 
+  left_join(loc_tag_orders) %>% 
+  # group_by() %>%
+  select(genome, seqid, locus_tag,loc_tag_order) %>% 
+  nest(seqid_loc_tags=c(locus_tag, loc_tag_order)) %>% 
+  # mutate(seqid_loc_tags=map(.x = data, .f = pull, locus_tag)) %>% 
+  ungroup() %>% 
+  select(genome, seqid, seqid_loc_tags)
+
+
+###
 
 genome_filenames <- list.files(path = './gifrop_out/sequence_data', pattern = '.fna', full.names = TRUE)
 
@@ -210,6 +237,7 @@ islands_pangenome_gff <-
   mutate(newdat=map2(.x = data, .y=island_IDs, .f = left_join)) %>% 
   select(genome, seqid, newdat) %>% 
   unnest(cols = newdat) %>% 
+  # mutate(names(loc_tag_order)=locus_tag) %>% pull(loc_tag_order)
   filter(!is.na(island_id)) %>% 
   ungroup() %>% 
   mutate(island_ID=paste(seqid, island_id, sep = '_')) %>% 
@@ -219,13 +247,13 @@ islands_pangenome_gff <-
   mutate(island_loc_tags=map(.x = data, .f = pull, locus_tag)) %>% 
   left_join(seq_loctag_tib) %>% 
   left_join(seq_lens) %>% 
-  mutate(only_island=map2_lgl(.x = island_loc_tags, .y = seqid_loc_tags, .f= ~ all(.y%in%.x))) %>% 
-  select(island_ID, genome,seqid, data, only_island, seqid_len) %>% 
+  mutate(only_island=map2_lgl(.x = island_loc_tags, .y = seqid_loc_tags, .f= ~ all(.y$locus_tag%in%.x)), 
+         flanking_genes=map2_chr(.x=data, .y=seqid_loc_tags, .f=ID_flanking_genes)) %>% 
+  select(island_ID, genome,seqid, data, only_island, seqid_len, flanking_genes) %>% 
   unnest(cols = data) %>% 
   ungroup() 
 
 islands_pangenome_gff %>% write_csv('./gifrop_out/islands_pangenome_gff.csv')
-
 
 # creates the island_info summary of the islands
 island_info <- 
@@ -248,7 +276,8 @@ island_info <-
               only_island ~ as.numeric(unique(seqid_len)),   # was having int vs double conflicts here
               !only_island ~ max(end)),
             acc_frag = paste(unique(`Accessory Fragment`), collapse = '|'), 
-            genes=paste(Gene, collapse = '|')) 
+            genes=paste(Gene, collapse = '|'), 
+            flank_loc_tags=paste(flanking_genes, collapse = '|')) 
 
 
 island_info %>% 
@@ -282,7 +311,7 @@ Biostrings::writeXStringSet(all_islands, './gifrop_out/my_islands/All_islands.fa
 
 #IF BLOCK HERE?
 # #### OUTPUT GFFS HERE ####
-# 
+# Gffs can now be re-constructed from the islands_pangenome_gff.csv file
 
 
 # get_gffs <- function(island_info, gff){

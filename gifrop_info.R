@@ -19,7 +19,7 @@ suppressPackageStartupMessages(library(igraph))
 #getwd()
 
 ## read in island info data ##
-res_4_real <- read_csv('./gifrop_out/my_islands/island_info.csv', col_types = c('cccddddcddlcc'))
+res_4_real <- read_csv('./gifrop_out/my_islands/island_info.csv', col_types = c('cccddddcddlccc'))
 
 
 # current_directory <- getwd()
@@ -220,7 +220,7 @@ ipa <- poi %>% select(Gene, all_islands) %>%
   group_by(Gene, all_islands) %>% tally() %>%
   ungroup() %>%
   spread(key=Gene, value = n, fill = 0) %>%
-  column_to_rownames(var = 'all_islands') %>% as.matrix()
+  tibble::column_to_rownames(var = 'all_islands') %>% as.matrix()
 
 #### INSERT COMMUNITY BASED CLUSTERING HERE ####
 # maybe save this to do within primary clusters?
