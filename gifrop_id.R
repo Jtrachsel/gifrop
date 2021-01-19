@@ -276,8 +276,8 @@ island_info <-
               only_island ~ as.numeric(unique(seqid_len)),   # was having int vs double conflicts here
               !only_island ~ max(end)),
             acc_frag = paste(unique(`Accessory Fragment`), collapse = '|'), 
-            genes=paste(Gene, collapse = '|'), 
-            flank_loc_tags=paste(flanking_genes, collapse = '|')) 
+            genes=paste(unique(Gene), collapse = '|'), 
+            flank_loc_tags=paste(unique(flanking_genes), collapse = '|')) 
 
 
 island_info %>% 
