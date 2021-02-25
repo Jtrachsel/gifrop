@@ -128,6 +128,9 @@ enframe_island_list <- function(island_list){
     unnest(cols = locus_tag)
 }
 
+
+# change this to select 10? flanking genes on either side, then can cluster spots of insertion
+# using same clustering alg as islands themselves
 ID_flanking_genes <- function(datfrm, seqid_loc_tags){
   extract_these <- 
     datfrm %>% 
@@ -199,10 +202,8 @@ seq_loctag_tib <-
   unnest(cols = gff_df) %>% 
   select(genome, seqid, locus_tag) %>% 
   left_join(loc_tag_orders) %>% 
-  # group_by() %>%
   select(genome, seqid, locus_tag,loc_tag_order) %>% 
   nest(seqid_loc_tags=c(locus_tag, loc_tag_order)) %>% 
-  # mutate(seqid_loc_tags=map(.x = data, .f = pull, locus_tag)) %>% 
   ungroup() %>% 
   select(genome, seqid, seqid_loc_tags)
 
