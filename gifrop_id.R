@@ -197,7 +197,7 @@ loc_tag_orders <- bind_rows(lapply(gffs, get_loc_tag_order))
 
 # this tibble is to help determine if an island occupies the whole contig
 # also used to extract flanking locus tags ( core genes that border islands)
-seq_loctag_tib <- 
+loctags_on_seqids <- 
   tibble::enframe(gffs, name = 'genome', value='gff_df') %>% 
   unnest(cols = gff_df) %>% 
   select(genome, seqid, locus_tag) %>% 
@@ -246,7 +246,7 @@ islands_pangenome_gff <-
   group_by(island_ID, genome, seqid) %>%
   nest() %>% 
   mutate(island_loc_tags=map(.x = data, .f = pull, locus_tag)) %>% 
-  left_join(seq_loctag_tib) %>% 
+  left_join(loctags_on_seqids) %>% 
   left_join(seq_lens) %>% 
   mutate(only_island=map2_lgl(.x = island_loc_tags, .y = seqid_loc_tags, .f= ~ all(.y$locus_tag%in%.x)), 
          flanking_genes=map2_chr(.x=data, .y=seqid_loc_tags, .f=ID_flanking_genes)) %>% 
