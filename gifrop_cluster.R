@@ -236,7 +236,8 @@ clust_info <- tibble(island_ID = names(membership(clust1)),
 
 
 
-dereplication_info %>%
+clust_info <- 
+  dereplication_info %>%
   left_join(clust_info) %>%
   separate_rows(all_IDs, sep = '\\|') %>% 
   select(-island_ID) %>% 
@@ -245,7 +246,8 @@ dereplication_info %>%
             secondary_cluster=secondary_cluster, 
             tertiary_cluster=tertiary_cluster, 
             quat_cluster=quat_cluster) %>% 
-  bind_rows(clust_info)
+  bind_rows(clust_info) %>% 
+  unique()
 
 
 
