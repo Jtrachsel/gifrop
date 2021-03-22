@@ -1,20 +1,21 @@
 args = commandArgs(trailingOnly=TRUE)
 setwd(args[1])
+
 # CHANGE THIS TO GIFROP_CLASSIFY.R
 suppressPackageStartupMessages(library(dplyr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(tidyr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(readr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(tibble, quietly = TRUE, warn.conflicts = FALSE))
 # suppressPackageStartupMessages(library(ggplot2, quietly = TRUE, warn.conflicts = FALSE))
-suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
-suppressPackageStartupMessages(library(igraph))
+# suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
+# suppressPackageStartupMessages(library(igraph))
 
 
 
 ### ONLY FOR HERE FOR TESTING ###
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan/')
+# setwd('/home/julian/Documents/gifrop_examples/test5')
 # setwd('/project/fsep_004/jtrachsel/klima/assembly/both/second_flye_polish/pananal/plasmids/pan/')
-setwd('/home/julian/Documents/gifrop/test_data/pan')
+# setwd('/home/julian/Documents/gifrop/test_data/pan')
 #getwd()
 
 ## read in island info data ##
@@ -149,7 +150,14 @@ island_types <- allbricates %>%
 
 island_info %>%
   left_join(island_types) %>% 
+  left_join(res_types) %>%
+  left_join(vir_types) %>%
+  left_join(plasmid_types) %>%
+  left_join(viro_types) %>%
+  left_join(megares_types) %>%
   write_csv('./gifrop_out/classified_island_info.csv')
+
+print('Done with island classification')
 
 ### END READ IN ABRICATE STUFF ###
 

@@ -236,7 +236,7 @@ echo "DONE WRANGLING SEQUENCE DATA"
 
 mkdir ./gifrop_out/my_islands
 
-# RUN Island_ID_out.R
+# RUN gifrop_ID.R
 
 echo "EXECUTING Rscript 'gifrop_id.R'"
 #Rscript "$DIR"/gifrop_id2.R $exdir 2>&1 | tee -a gifrop.log
@@ -288,12 +288,26 @@ mkdir figures
 
 # run gifrop_info.R
 
-Rscript "$DIR"/gifrop_info.R $exdir 2>&1 | tee -a gifrop.log
+Rscript "$DIR"/gifrop_classify.R $exdir 2>&1 | tee -a gifrop.log
 
 if [[ "$?" != 0 ]]
-  then echo 'gifrop_info.R did not execute correctly. See gifrop.log  TERMINATING';
+  then echo 'gifrop_classify.R did not execute correctly. See gifrop.log  TERMINATING';
   exit [1];
 fi
+
+
+
+# run gifrop_cluster.R
+
+Rscript "$DIR"/gifrop_cluster.R $exdir 2>&1 | tee -a gifrop.log
+
+if [[ "$?" != 0 ]]
+  then echo 'gifrop_cluster.R did not execute correctly. See gifrop.log  TERMINATING';
+  exit [1];
+fi
+
+
+
 
 # if requested, make plots
 
