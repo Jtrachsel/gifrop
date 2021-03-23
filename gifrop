@@ -307,6 +307,13 @@ if [[ "$?" != 0 ]]
 fi
 
 
+Rscript "$DIR"/gifrop_pannotate.R $exdir 2>&1 | tee -a gifrop.log
+
+if [[ "$?" != 0 ]]
+  then echo 'gifrop_pannotate.R did not execute correctly. See gifrop.log  TERMINATING';
+  exit [1];
+fi
+
 
 
 # if requested, make plots
