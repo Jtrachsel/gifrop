@@ -239,9 +239,7 @@ mkdir ./gifrop_out/my_islands
 # RUN gifrop_ID.R
 
 echo "EXECUTING Rscript 'gifrop_id.R'"
-#Rscript "$DIR"/gifrop_id2.R $exdir 2>&1 | tee -a gifrop.log
 
-# this will be the call when i get id to take other args
 # arg[1] is working directory
 # arg[2] is mingenes
 # arg[3] is flanking DNA

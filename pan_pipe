@@ -119,7 +119,7 @@ fi
 ### CHECK FOR '.fna' FILES HERE: ###
 
 
-numFNA=$(ls *fna |wc -l)
+numFNA=$(find . -name '*.fna' | wc -l)
 
 if [[ $numFNA -lt 2 ]]
  then
