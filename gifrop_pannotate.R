@@ -1,3 +1,6 @@
+args = commandArgs(trailingOnly=TRUE)
+setwd(args[1])
+
 library(readr)
 library(dplyr)
 library(tidyr)
