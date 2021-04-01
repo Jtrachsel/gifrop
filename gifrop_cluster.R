@@ -115,7 +115,8 @@ dereplication_info <-
   group_by(HASH) %>%
   summarise(island_ID=island_ID[1],
             num_elements=n(), 
-            all_IDs = paste(island_ID, collapse = '|'))
+            all_IDs = paste(island_ID, collapse = '|')) %>% 
+  write_csv('./gifrop_out/dereplication_info.csv')
 
 dereplicated_island_info <- 
   island_info %>% 
