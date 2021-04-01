@@ -123,6 +123,13 @@ dereplicated_island_info <-
   filter(island_ID %in% dereplication_info$island_ID)
 
 
+if (!exists('reduce_clustering_problem') & nrow(dereplicated_island_info) > 50000){
+  reduce_clustering_problem <- T
+} else{ 
+  reduce_clustering_problem <- F
+}
+
+
 
 if (reduce_clustering_problem){
   print('REDUCING CLUSTERING PROBLEM BY EXCLUDING "ONLY_PHAGE" AND SMALL UNKNOWNS')
