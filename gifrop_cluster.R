@@ -42,10 +42,12 @@ cluster_islands <-
     # Matrix::Matrix(sparse = T)
     
     g <- graph_from_adjacency_matrix(adjmatrix = sim_mat,  weighted = T, mode='upper', diag = F)
+    g <- delete_edges(g, E(g)[weight == 0])
     
-    
+    print('writing overlap coef graph')
+    igraph::write.graph(g, file = './gifrop_out/overlap_coef_graph.dot', format = 'dot')
     # find clusters in this network
-    print('Primary clustering, any islands sharing any gene will be in the same primary cluster')
+    print('Primary clustering, any islands sharing any number of genes will be in the same primary cluster')
     clust1 <- clusters(mode='weak', g)
     
     
@@ -72,7 +74,7 @@ cluster_islands <-
     # Matrix::Matrix(sparse = T)
     
     g <- graph_from_adjacency_matrix(adjmatrix = sim_mat,  weighted = T, mode='upper', diag = F)
-    
+    igraph::write.graph(g, file = './gifrop_out/jaccard_coef_graph.dot', format = 'dot')
     print('removing edges representing jaccard similarities of less than .75')
     
     
@@ -113,9 +115,10 @@ dereplication_info <-
   island_info %>% 
   mutate(HASH=map_chr(.x = genes, .f = ~digest(.x))) %>%   # makes a hash of every island's "genes" column
   group_by(HASH) %>%
-  summarise(island_ID=island_ID[1],
-            num_elements=n(), 
-            all_IDs = paste(island_ID, collapse = '|')) %>% 
+  summarise(all_IDs = paste(island_ID, collapse = '|'),
+            island_ID=island_ID[1],
+            num_elements=n()
+            ) %>% 
   write_csv('./gifrop_out/dereplication_info.csv')
 
 dereplicated_island_info <- 
@@ -175,5 +178,8 @@ if (reduce_clustering_problem){
     write_csv(file = './gifrop_out/clustered_island_info.csv')
   
 }
-
 # cii <- read_csv('./gifrop_out/clustered_island_info.csv')
+# 
+# cii <- cii %>% left_join(dereplication_info) %>% separate_rows(all_IDs,sep='\\|')
+# 
+# cii %>% write_csv('TEMP_CII.csv')
