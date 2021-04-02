@@ -31,6 +31,7 @@ GET_ISLANDS=0
 SPLIT_ISLANDS=0
 OTHER_ARGUMENTS=()
 
+
 # Loop through arguments and process them
 # this is a little hairy...
 for arg in "$@"
@@ -64,6 +65,10 @@ do
         ;;
         -n|--no_plots)
         PLOTS=0
+        shift # Remove argument name from processing
+        ;;
+        -r|--reference)
+        REFERENCE="$2"
         shift # Remove argument name from processing
         ;;
         *)
@@ -105,13 +110,14 @@ that were used to run roary.
   -m, --min_genes   Only return islands with greater than this many genes (4)
   -f, --flank_dna   output this many bases of DNA on either side of each island (0)
   -v, --version     Output version information and exit
+  -r, --reference   Find genomic islands relative to this reference
   --get_islands     Run the main program to extract genomic islands
   --split_islands   Write one fasta file for each genomic island
 
 
 Example:
 
-gifrop --get_islands --min_genes 5 --threads 16 --split_islands
+gifrop --get_islands --min_genes 5 --threads 16 --split_islands 
 
 
 "
@@ -243,7 +249,8 @@ echo "EXECUTING Rscript 'gifrop_id.R'"
 # arg[1] is working directory
 # arg[2] is mingenes
 # arg[3] is flanking DNA
-Rscript "$DIR"/gifrop_id.R $exdir $MIN_GENES $FLANKING_DNA 2>&1 | tee -a ./gifrop_out/gifrop.log
+# arg[4] is reference
+Rscript "$DIR"/gifrop_id.R $exdir $MIN_GENES $FLANKING_DNA $REFERENCE 2>&1 | tee -a ./gifrop_out/gifrop.log
 
 
 if [[ "$?" != 0 ]]

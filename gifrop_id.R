@@ -3,6 +3,7 @@ args = commandArgs(trailingOnly=TRUE)
 setwd(args[1])
 min_genes <- as.numeric(args[2])
 flankingDNA <- as.numeric(args[3])
+reference <- as.character(args[4])
 
 # type check of args
 stopifnot(exprs =
@@ -12,7 +13,7 @@ stopifnot(exprs =
           )
 
 ### FOR TESTING ONLY ####
-# setwd('./test_data3/')
+# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan')
 # min_genes <- 4
 # flankingDNA <-1000
 # getwd()
@@ -49,13 +50,24 @@ get_loc_tag_order <- function(gff){
 # locus tags.
 # keeps genes that dont occur in every isolate
 # keeps genes that occur more than once within any genome
-remove_core_genome <- function(roary_gpa){
+remove_core_genome <- function(roary_gpa, reference=NULL){
   
-  tot_isolates <- ncol(roary_gpa) - 14
-  not_present_in_all <- roary_gpa$`No. isolates` < tot_isolates
-  
-  keepers <- roary_gpa$`Avg sequences per isolate` > 1 | not_present_in_all
-  access_frags <- roary_gpa[keepers,]
+  # browser()
+  if (is.na(reference)){
+    tot_isolates <- ncol(roary_gpa) - 14
+    not_present_in_all <- roary_gpa$`No. isolates` < tot_isolates
+    
+    keepers <- roary_gpa$`Avg sequences per isolate` > 1 | not_present_in_all
+    access_frags <- roary_gpa[keepers,]
+  }else {
+    
+    if(!(reference %in% colnames(gpa))){
+      stop("reference not present in pangenome, reference name must match exactly")
+    }
+    keepers <- is.na(roary_gpa[[reference]]) # if the gene isnt present in the reference, keep it
+    access_frags <- roary_gpa[keepers,]
+  }
+
   ####
   # this step will remove genomes from the analysis which do not
   # contain any non-core genes
@@ -222,7 +234,7 @@ seq_lens <- tibble(seqid=unlist(lapply(genome_seqs_list, names)),
 
 # identify islands in the context of the pangenome
 islands_pangenome_gff <- 
-  remove_core_genome(gpa) %>%    # removes genes found in all genomes
+  remove_core_genome(gpa, reference = reference) %>%    # removes genes found in all genomes
   pivot_longer(cols=-c(1:14),
                names_to = 'genome',
                values_to='locus_tag', 
