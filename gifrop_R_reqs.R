@@ -1,6 +1,17 @@
 # Need to check that these libraries are installed
 
-reqs <- c('dplyr','tibble','tidyr','readr','tibble','ggplot2','purrr','Biostrings','BSgenome', 'igraph', 'proxy','digest')
+reqs <- c('dplyr',
+          'tibble',
+          'tidyr',
+          'readr',
+          'tibble',
+          'ggplot2',
+          'purrr',
+          'Biostrings',
+          'BSgenome',
+          'igraph',
+          'parallelDist',
+          'digest')
 
 
 unsatisfied_reqs <- reqs[!(reqs %in% installed.packages()[,"Package"])]
