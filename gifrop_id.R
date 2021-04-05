@@ -64,6 +64,7 @@ remove_core_genome <- function(roary_gpa, reference=NULL){
     if(!(reference %in% colnames(gpa))){
       stop("reference not present in pangenome, reference name must match exactly")
     }
+    print(paste('Finding islands in reference to', reference))
     keepers <- is.na(roary_gpa[[reference]]) # if the gene isnt present in the reference, keep it
     access_frags <- roary_gpa[keepers,]
   }
