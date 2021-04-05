@@ -91,7 +91,7 @@ cluster_islands <-
     clust_info <- 
       dereplication_info %>%
       right_join(clust_info) %>%
-      separate_rows(all_IDs, sep = '\\|') %>% 
+      separate_rows(all_IDs, sep = '___') %>% 
       select(-island_ID) %>% 
       transmute(island_ID=all_IDs, 
                 primary_cluster=paste0(primary_cluster, prefix), 
@@ -115,7 +115,7 @@ dereplication_info <-
   island_info %>% 
   mutate(HASH=map_chr(.x = genes, .f = ~digest(.x))) %>%   # makes a hash of every island's "genes" column
   group_by(HASH) %>%
-  summarise(all_IDs = paste(island_ID, collapse = '|'),
+  summarise(all_IDs = paste(island_ID, collapse = '___'),  # no one would have a triple underscore in their genome name right?
             island_ID=island_ID[1],
             num_elements=n()
             ) %>% 
