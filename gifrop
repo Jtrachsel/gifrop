@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e # terminate the script immediately upon errors
 scriptName='gifrop'
-version='0.0.8'
+version='0.0.9'
 
 # this line returns the directory that this script resides in
 # it is used to help determine the paths of the R scripts
@@ -71,6 +71,18 @@ do
         REFERENCE="$2"
         shift # Remove argument name from processing
         ;;
+        --scut)
+        SCUT="$2"
+        shift # Remove argument name from processing
+        ;;
+        --tcut)
+        TCUT="$2"
+        shift # Remove argument name from processing
+        ;;
+        --qcut)
+        QCUT="$2"
+        shift # Remove argument name from processing
+        ;;
         *)
         OTHER_ARGUMENTS+=("$1") # arg values seem to be accumulating in here
         shift # Remove generic argument from processing
@@ -113,6 +125,9 @@ that were used to run roary.
   -r, --reference   Find genomic islands relative to this reference
   --get_islands     Run the main program to extract genomic islands
   --split_islands   Write one fasta file for each genomic island
+  --scut            prune edges with OC less than scut before secondary cluster (.5)
+  --tcut            prune edges with OC less than tcut before tertiary cluster (.75)
+  --qcut            prune edges with jaccard sim less than qcut before quat cluster (.75)
 
 
 Example:
@@ -304,7 +319,7 @@ fi
 
 # run gifrop_cluster.R
 
-Rscript "$DIR"/gifrop_cluster.R $exdir 2>&1 | tee -a gifrop.log
+Rscript "$DIR"/gifrop_cluster.R $exdir $SCUT $TCUT $QCUT 2>&1 | tee -a gifrop.log
 
 if [[ "$?" != 0 ]]
   then echo 'gifrop_cluster.R did not execute correctly. See gifrop.log  TERMINATING';

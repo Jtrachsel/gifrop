@@ -1,5 +1,26 @@
 args = commandArgs(trailingOnly=TRUE)
 setwd(args[1])
+scut <- as.numeric(args[2])
+tcut <- as.numeric(args[3])
+qcut <- as.numeric(args[4])
+
+
+if (is.na(scut)){
+  print("Got NA for scut parameter, using default of 0.50")
+  scut <- .5
+}
+
+
+if (is.na(tcut)){
+  print("Got NA for tcut parameter, using default of 0.75")
+  tcut <- .75
+}
+
+
+if (is.na(qcut)){
+  print("Got NA for qcut parameter, using default of 0.75")
+  qcut <- .75
+}
 
 suppressPackageStartupMessages(library(dplyr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(tidyr, quietly = TRUE, warn.conflicts = FALSE))
@@ -11,7 +32,12 @@ library(parallelDist)
 library(purrr)
 
 cluster_islands <- 
-  function(dereplicated_island_info, dereplication_info, prefix=NULL){
+  function(dereplicated_island_info,
+           dereplication_info,
+           prefix=NULL, 
+           scut=.5, 
+           tcut=.75, 
+           qcut=.75){
     # browser()
     # clusters genomic islands into 4 levels
     #takes: 
@@ -48,22 +74,24 @@ cluster_islands <-
     igraph::write.graph(g, file = './gifrop_out/overlap_coef_graph.dot', format = 'dot')
     # find clusters in this network
     print('Primary clustering, any islands sharing any number of genes will be in the same primary cluster')
-    clust1 <- clusters(mode='weak', g)
+    print('two islands not sharing any gene content can be in the same primary cluster if they are linked 
+          by and island that')
+    clust1 <- clusters(g)
     
     
     print('secondary clustering')
     print('pruning graph, removing edges with overlap coef of less than .5')
     print('an overlap coefficient of .5 means that at least 1/2 of the genes in the smaller island are also present in the other island')
-    print('any two islands with an overlap coef of at least .5 are in the same secondary cluster')
+    # print('any two islands with an overlap coef of at least .5 are in the same secondary cluster')
     
-    g <- delete_edges(g, E(g)[weight<.5])
-    clust2 <- clusters(g)
+    g <- delete_edges(g, E(g)[weight<scut])
+    clust2 <- cluster_louvain(g)
     
-    print('pruning graph, removing edges with overlap coef of less than 1')
+    print('pruning graph, removing edges with overlap coef of less than XXX')
     
     
-    g <- delete_edges(g, E(g)[weight<1])
-    clust3 <- clusters(g)
+    g <- delete_edges(g, E(g)[weight<tcut])
+    clust3 <- cluster_louvain(g)
     
     print('constructing new graph with jaccard similarities')
     print('This will allow the identification of extremely similar genomic islands')
@@ -78,8 +106,8 @@ cluster_islands <-
     print('removing edges representing jaccard similarities of less than .75')
     
     
-    g <- delete_edges(g, E(g)[weight<.75])
-    clust4 <- clusters(g)
+    g <- delete_edges(g, E(g)[weight<qcut])
+    clust4 <- cluster_louvain(g)
     
     clust_info <- tibble(island_ID = names(membership(clust1)),
                          primary_cluster = membership(clust1),
@@ -155,8 +183,17 @@ if (reduce_clustering_problem){
     dereplicated_island_info %>%
     filter(!(island_ID %in% c(only_phage, small_unknowns)))
   
-  clust_info <- cluster_islands(reduced_dereplicated_island_info, dereplication_info)
-  phages_clust_info <- cluster_islands(phages, dereplication_info, prefix = 'P') 
+  clust_info <- cluster_islands(reduced_dereplicated_island_info,
+                                dereplication_info, 
+                                scut = scut, 
+                                tcut = tcut, 
+                                qcut = qcut)
+  phages_clust_info <- cluster_islands(phages,
+                                       dereplication_info,
+                                       prefix = 'P', 
+                                       scut = scut, 
+                                       tcut = tcut, 
+                                       qcut = qcut) 
   
   bind_rows(clust_info, phages_clust_info) %>% 
     mutate(genome=sub('(.*)_[0-9]+_[0-9]+', '\\1', island_ID)) %>%
@@ -167,10 +204,14 @@ if (reduce_clustering_problem){
   
   
 } else {
-  ### 20000x20000 clustering problem took ~2 hours? for each distance calc (so 4 hours tot)
+  ### 20000x20000 clustering problem took ~3 hours? for each distance calc (so 6 hours tot)
   print('NOT REDUCING CLUSTERING PROBLEM')
   
-  cluster_islands(dereplicated_island_info, dereplication_info) %>% 
+  cluster_islands(dereplicated_island_info,
+                  dereplication_info,
+                  scut = scut, 
+                  tcut = tcut, 
+                  qcut = qcut) %>% 
     mutate(genome=sub('(.*)_[0-9]+_[0-9]+', '\\1', island_ID)) %>%
     left_join(island_info) %>% 
     mutate(island_type=ifelse(is.na(island_type), 'unknown', island_type)) %>%

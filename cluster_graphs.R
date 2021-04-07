@@ -45,48 +45,87 @@ cii8_matrix <- cii8_PA %>% column_to_rownames(var='island_ID') %>% as.matrix()
 #
 
 #
-
-test <- cii8 %>%
-  select(island_ID, genes) %>%
-  separate_rows(genes, sep='\\|') %>% 
-  group_by(island_ID) %>%
-  nest() %>% 
-  mutate(data=map(data, pull))
-
-EDGE_LIST <- expand_grid(test, test,.name_repair ='universal') %>%
-  filter(island_ID...1 != island_ID...3) %>% 
-  mutate(in_common=map2_chr(.x = data...2, .y =data...4 , .f = ~ paste(.x[.x %in% .y] , collapse = '|')), 
-         num_in_common=map2_dbl(.x = data...2, .y =data...4 , .f = ~ length(.x[.x %in% .y]))) %>% 
-  select(-c(data...2, data...4)) %>% 
-  transmute(from=island_ID...1, 
-            to=island_ID...3, 
-            in_common=in_common, 
-            num_in_common=num_in_common) %>% 
-  filter(num_in_common > 0)
-
-library(igraph)
-
-
-graph_from_edgelist(EDGE_LIST)
-
-#
-
-
-###
-
-expand_grid(x = 1:3, y = 1:2)
-expand_grid(l1 = letters, l2 = LETTERS)
-
-# Can also expand data frames
-expand_grid(df = data.frame(x = 1:2, y = c(2, 1)), z = 1:3)
-# And matrices
-expand_grid(x1 = matrix(1:4, nrow = 2), x2 = matrix(5:8, nrow = 2))
+generate_edge_lists <- function(clustered_island_info, clust_level, cluster_vec){
+  
+  # browser()
+  cii_red <- cii[cii[[clust_level]] %in% cluster_vec,]
+  
+  island_genes <- 
+    cii_red %>%
+    select(island_ID, genes) %>%
+    separate_rows(genes, sep='\\|') %>% 
+    group_by(island_ID) %>%
+    nest() %>% 
+    mutate(data=map(data, pull))
+  
+  EDGE_LIST <-
+    expand_grid(island_genes, island_genes, .name_repair ='universal') %>%
+    filter(island_ID...1 != island_ID...3) %>% 
+    mutate(in_common=map2_chr(.x = data...2, .y =data...4 , .f = ~ paste(.x[.x %in% .y] , collapse = '|')), 
+           num_in_common=map2_dbl(.x = data...2, .y =data...4 , .f = ~ length(.x[.x %in% .y]))) %>% 
+    select(-c(data...2, data...4)) %>% 
+    transmute(from=island_ID...1, 
+              to=island_ID...3, 
+              in_common=in_common, 
+              num_in_common=num_in_common) %>% 
+    filter(num_in_common > 0)
+  
+  return(EDGE_LIST)
+}
 
 
-max(colSums(cii8_matrix))
-
-cii8_matrix[,which(colSums(cii8_matrix) == 6)]
-
-
-
+# 
+generate_edge_lists(cii, clust_level = 'primary_cluster', cluster_vec = 8)
+# 
+# test <- cii8 %>%
+#   select(island_ID, genes) %>%
+#   separate_rows(genes, sep='\\|') %>% 
+#   group_by(island_ID) %>%
+#   nest() %>% 
+#   mutate(data=map(data, pull))
+# 
+# EDGE_LIST <- expand_grid(test, test,.name_repair ='universal') %>%
+#   filter(island_ID...1 != island_ID...3) %>% 
+#   mutate(in_common=map2_chr(.x = data...2, .y =data...4 , .f = ~ paste(.x[.x %in% .y] , collapse = '|')), 
+#          num_in_common=map2_dbl(.x = data...2, .y =data...4 , .f = ~ length(.x[.x %in% .y]))) %>% 
+#   select(-c(data...2, data...4)) %>% 
+#   transmute(from=island_ID...1, 
+#             to=island_ID...3, 
+#             in_common=in_common, 
+#             num_in_common=num_in_common) %>% 
+#   filter(num_in_common > 0)
+# 
+# library(igraph)
+# 
+# 
+# graph_from_edgelist(EDGE_LIST)
+# 
+# cii8$flank_loc_tags
+# cii8$seqid_len
+# 
+# cii8$location_predict <- ifelse(cii8$flank_loc_tags == 'none|none', 'plas', 'chrom')
+# 
+# cii8$island_type
+# 
+# 
+# ###
+# 
+# expand_grid(x = 1:3, y = 1:2)
+# expand_grid(l1 = letters, l2 = LETTERS)
+# 
+# # Can also expand data frames
+# expand_grid(df = data.frame(x = 1:2, y = c(2, 1)), z = 1:3)
+# # And matrices
+# expand_grid(x1 = matrix(1:4, nrow = 2), x2 = matrix(5:8, nrow = 2))
+# 
+# 
+# max(colSums(cii8_matrix))
+# 
+# cii8_matrix[,which(colSums(cii8_matrix) == 6)]
+# 
+# 
+# 
 pgff %>% filter(Gene == 'group_5474')
+pgff %>% filter(Gene == 'group_171')
+pgff %>% filter(Gene == 'group_792')
+pgff %>% filter(Gene == 'group_65')
