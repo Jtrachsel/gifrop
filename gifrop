@@ -262,10 +262,11 @@ mkdir ./gifrop_out/my_islands
 echo "EXECUTING Rscript 'gifrop_id.R'"
 
 # arg[1] is working directory
-# arg[2] is mingenes
-# arg[3] is flanking DNA
-# arg[4] is reference
-Rscript "$DIR"/gifrop_id.R $exdir $MIN_GENES $FLANKING_DNA $REFERENCE 2>&1 | tee -a ./gifrop_out/gifrop.log
+# arg[2] is threads
+# arg[3] is mingenes
+# arg[4] is flanking DNA
+# arg[5] is reference
+Rscript "$DIR"/gifrop_id.R $exdir $THREADS $MIN_GENES $FLANKING_DNA $REFERENCE 2>&1 | tee -a ./gifrop_out/gifrop.log
 
 
 if [[ "$?" != 0 ]]

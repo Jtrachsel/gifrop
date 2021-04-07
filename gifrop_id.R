@@ -1,10 +1,16 @@
 # deal with command line args
 args = commandArgs(trailingOnly=TRUE)
 setwd(args[1])
-min_genes <- as.numeric(args[2])
-flankingDNA <- as.numeric(args[3])
-reference <- as.character(args[4])
+threads <- as.numeric(args[2])
+min_genes <- as.numeric(args[3])
+flankingDNA <- as.numeric(args[4])
+reference <- as.character(args[5])
 
+
+if(is.na(threads)){
+  print("got NA for threads, defaulting to one")
+  threads <- 1
+}
 # type check of args
 stopifnot(exprs =
             {is.numeric(min_genes)
@@ -13,9 +19,10 @@ stopifnot(exprs =
           )
 
 ### FOR TESTING ONLY ####
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data2/pan')
+# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data4/pan')
 # min_genes <- 4
 # flankingDNA <-1000
+# threads <- 8
 # getwd()
 
 ###
@@ -25,6 +32,7 @@ suppressPackageStartupMessages(library(dplyr, quietly = TRUE, warn.conflicts = F
 suppressPackageStartupMessages(library(tidyr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(readr, quietly = TRUE, warn.conflicts = FALSE))
 suppressPackageStartupMessages(library(purrr, quietly = TRUE, warn.conflicts = FALSE))
+library(parallel)
 print('done loading packages')
 # 
 # # Functions #
@@ -191,7 +199,7 @@ gpa <- read_csv('./gene_presence_absence.csv', col_types = all_cols)
 # read in gffs
 print('reading in gffs...')
 # parallel this? meh.
-gffs <- lapply(gff_files, gff_parse3)
+gffs <- mclapply(X=gff_files, FUN=gff_parse3, mc.cores=threads)
 
 gff_names <- sub('./gifrop_out/sequence_data/(.*)_short.gff','\\1',gff_files)
 gff_names <- gsub('/?','',gff_names)
@@ -204,7 +212,7 @@ names(gffs) <- gff_names
 # now, locus tags are sorted according to the converted numeric, then 
 # a new order is assigned, this way there are no gaps caused by 
 # tRNA rRNA type locus tags being filtered out.
-loc_tag_orders <- bind_rows(lapply(gffs, get_loc_tag_order))
+loc_tag_orders <- bind_rows(mclapply(gffs, get_loc_tag_order))
 
 
 
@@ -226,7 +234,8 @@ loctags_on_seqids <-
 genome_filenames <- list.files(path = './gifrop_out/sequence_data', pattern = '.fna', full.names = TRUE)
 
 print('reading in fastas...')
-genome_seqs_list <- sapply(genome_filenames, Biostrings::readDNAStringSet)
+genome_seqs_list <- mclapply(genome_filenames, Biostrings::readDNAStringSet)
+names(genome_seqs_list) <- genome_filenames
 print('done reading in fastas')
 
 # makes a dataframe of seqid and seqid length
