@@ -48,7 +48,7 @@ dev.off()
 
 p <- clust_info %>%
   ggplot(aes(x=num_genes, y=primary_cluster, fill=island_type)) + 
-  geom_point(position = position_jitter(width = .2),shape=21, color='white')
+  geom_point(position = position_jitter(width = .1),shape=21, color='white')
 
 png('./gifrop_out/figures/primary_cluster_types.png', width=840, height=600, res=120, type="cairo")
 print(p)
@@ -57,7 +57,7 @@ dev.off()
 
 
 p <- clust_info %>% ggplot(aes(x=num_genes, y=secondary_cluster, fill=island_type)) + 
-  geom_point(position = position_jitter(width = .2),shape=21, color='white')
+  geom_point(position = position_jitter(width = .1),shape=21, color='white')
 
 png('./gifrop_out/figures/secondary_cluster_types.png', width=840, height=600, res=120, type="cairo")
 print(p)
@@ -66,7 +66,7 @@ dev.off()
 
 
 p <- clust_info %>% ggplot(aes(x=num_genes, y=tertiary_cluster, fill=island_type)) + 
-  geom_point(position = position_jitter(width = .2),shape=21, color='white')
+  geom_point(position = position_jitter(width = .1),shape=21, color='white')
 
 png('./gifrop_out/figures/tertiary_cluster_types.png', width=840, height=600, res=120, type="cairo")
 print(p)
@@ -75,7 +75,7 @@ dev.off()
 
 
 p <- clust_info %>% ggplot(aes(x=num_genes, y=quat_cluster, fill=island_type)) + 
-  geom_point(position = position_jitter(width = .2),shape=21, color='white')
+  geom_point(position = position_jitter(width = .1),shape=21, color='white')
 
 png('./gifrop_out/figures/quat_cluster_types.png', width=840, height=600, res=120, type="cairo")
 print(p)
