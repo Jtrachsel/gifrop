@@ -5,6 +5,7 @@ bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?s
 # gifrop
 
 **G**enomic **I**slands **f**rom **Ro**ary **P**angenomes.
+## This readme is a bit out of date right now.  I'll try and update soon.  
 
 This program is supposed to identify ‘genomic islands’ from roary
 pangenomes. The intent was to try and identify units of horizontal gene
