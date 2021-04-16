@@ -1,6 +1,7 @@
 
 [![install with
 bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/gifrop/README.html)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/gifrop/badges/downloads.svg)](https://anaconda.org/bioconda/gifrop)  
 
 # gifrop
 
@@ -26,26 +27,23 @@ different from one another.
     those that do not split paralogues (the -s option of roary).
 
 2.  the \*.gff files used by roary to create the pangenome. I have only
-    used those produced by prokka but others may work. The increment
-    between locus tags must be 1.
+    used those produced by prokka but others may work. 
 
 If all you have are nucleotide fastas then you can use the included
 `pan_pipe` script to take care of the whole pipeline from annotation
 with prokka to pangenome calculation with roary to genomic island
 extraction with gifrop.
 
-More or less this is a wrapper for exploring roary results.
-
 ## conda installation
 
 **create new conda environment**  
-`conda create -n gifrop`
+`conda create -n gifrop python=3.7`
 
 **activate new environment**  
 `conda activate gifrop`
 
 **install gifrop**  
-`conda install -c conda-forge -c bioconda -c defaults gifrop`
+`conda install -c conda-forge -c bioconda -c defaults gifrop=0.0.9`
 
 or
 
@@ -61,7 +59,7 @@ Install the dependencies and make sure they are in your path:
 3)  [R 3.6.\*](https://www.r-project.org/) and these R packages:  
     \-
     ‘dplyr’,‘tidyr’,‘readr’,‘tibble’,‘ggplot2’,‘purrr’,‘Biostrings’,‘BSgenome’,
-    ‘igraph’, ‘pheatmap’  
+    ‘igraph’, ‘parallelDist’, ‘digest’  
 4)  [roary](https://sanger-pathogens.github.io/Roary/) (if using
     pan\_pipe script)  
 5)  [prokka](https://github.com/tseemann/prokka) (if using pan\_pipe
@@ -76,7 +74,7 @@ Install the dependencies and make sure they are in your path:
     the output of roary, specifically the `gene_presence_absence.csv`
     file.  
   - run gifrop:
-      - `gifrop --find_islands --threads 8`  
+      - `gifrop --get_islands --threads 8`  
   - all outputs go to the `gifrop_out` directory.
 
 ## pan\_pipe script
@@ -98,12 +96,14 @@ strings of arguments, see `pan_pipe --help` for more information.
 
 1)  **remove the core genome from the pangenome.**
     
-      - Currently, this removes any gene that occurs in all isolates
+      - This removes any gene that occurs in all isolates
         exactly 1 time. This means that genes that only occur in some
         genomes and genes that occur twice or more in any genome are
         currently kept for consideration.  
+      - Alternatively, you can find genomic islands relative to a reference with the '--reference / -r' flag.
+            - In this mode, any genes present in the reference are removed from the pangenome.  
 
-2)  **Identify strings of consecutive genes** (locus tag numbers)  
+2)  **Identify strings of consecutive genes** (locus tag orders)  
 
 3)  **Remove strings that contain fewer than the minimum number of
     genes.**
@@ -113,32 +113,36 @@ strings of arguments, see `pan_pipe --help` for more information.
 
 4)  **Classify pangenomic islands** by running abricate with the
     following databases:
-    
-    1)  [Megares2.0](https://megares.meglab.org/) database (bc it has
+    1)  The NCBI amr database packaged with abricate.  
+    2)  [Megares2.0](https://megares.meglab.org/) database (bc it has
         metal tolerance)  
-    2)  [plasmid finder](https://cge.cbs.dtu.dk/services/PlasmidFinder/)
+    3)  [plasmid finder](https://cge.cbs.dtu.dk/services/PlasmidFinder/)
         (replicon genes)  
-    3)  [vfdb](http://www.mgc.ac.cn/VFs/main.htm) (virulence genes)  
-    4)  [ProphET](https://github.com/jaumlrc/ProphET) phage db  
+    4)  [vfdb](http://www.mgc.ac.cn/VFs/main.htm) (virulence genes)  
+    5)  [ProphET](https://github.com/jaumlrc/ProphET) phage db  
 
 5)  **Cluster pangenomic islands**, this can get messy.
     
-      - make a graph where pangenomic islands are nodes and they are
-        joined by edges when they share genes with other pangenomic
-        islands. The edges of the graph are weighted in proportion to
-        the number of genes that are shared by the nodes
-      - two levels of clustering:  
-        \- primary clustering: any islands that share any number of
-        genes will be in the same primary cluster.  
-        \- secondary clustering: this applies louvain sp? clustering on
-        the graph. This should hopefully help to separate some of the
-        more tangled islands.  
-        \- problems with clustering: in cases where there are two
-        plasmids that are very different but have some shared genes,
-        these will often be in the same cluster. I have seen a case
-        where the same transposon is inserted into different genomic
-        islands and plasmids and then they get all tangled together.
-        ANyway, it gets messy so be careful what your inputs are.  
+      - De-replicate islands with identical gene content
+      - calculate pairwise distances between all unique islands using two separate distance metrics
+            - Simpson (AKA overlap distance), and Jaccard distance.  
+            - Convert distances to similarities.  
+      - make two graphs where pangenomic islands are nodes and they are
+        joined by edges representing their similarities to other islands.
+        One graph for Overlap Coeficient and one for Jaccard.  Edges with 0 weight are 
+        removed from these graphs.
+      - four levels of clustering:  
+        \- primary clustering: Uses the Overlap Coeficient graph any island connected by non-zero weight edges are in the same primary cluster.  
+        \- secondary clustering: First The Overlap Coeficient graph is pruned to remove edges with weights less than 0.5.
+        an overlap similarity of 0.5 linking two islands means that at least half of the genes in the smaller island are present in the larger island.  
+        The Louvain clustering on algorithm is then applied to detect densly connected communities.  
+        \- tertiary clustering: The Overlap Coeficient graph is pruned to remove edges with weights less than 0.75.
+        an overlap similarity of 0.75 linking two islands means that at least 3/4 of the genes in the smaller island are present in the larger island.
+        The Louvain clustering on algorithm is then applied to detect densly connected communities.
+        \- quaternary clustering: The Jaccard Coeficient graph is pruned to remove edges with weights less than 0.75.
+        a jaccard similarity of 0.75 linking two islands means that both connected islands contain at least 75% of the total gene content of both islands combined.  
+        The Louvain clustering on algorithm is then applied to detect densly connected communities.
+
 
 6)  **output pangenomic island info.**  
     All outputs go to the `gifrop_out` folder.  
@@ -150,9 +154,9 @@ strings of arguments, see `pan_pipe --help` for more information.
       3. pan_only_islands.csv  
       4. figures directory  
          - some basic exploratory figs  
-         - heatmaps of the variable secondary clusters (buggy)  
       5. All the pangenomic islands  
-         - both fasta format and gffs  
+         - as a single fasta file 'All_islands.fasta'  
+         - can be split into individual fastas if requested.   
       6. logfiles  
     ```
 
@@ -187,14 +191,12 @@ adjacent to one another or one nested within another etc., they will be
 treated as one genomic island.
 
 **Error when identical contig names in different assemblies**  
-I think running prokka with `--compliant` will avoid this.
+
 
 ## TODO
 
 1)  link abricate results to pangenome, use coords of hits with gffs to
     get loc\_tags?  
-2)  Fix issue with viroseqs abricate db, puts ‘phage’ into resistance
-    column.
-3)  Include example data?
+2)  Include example data?
 
 Suggestions welcome.
