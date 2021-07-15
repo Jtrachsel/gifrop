@@ -19,7 +19,7 @@ stopifnot(exprs =
           )
 
 ### FOR TESTING ONLY ####
-# setwd('/home/Julian.Trachsel/Documents/gifrop/test_data4/pan')
+# setwd('/home/Julian.Trachsel/Reading/assemblies/confirmed_Reading/pan/')
 # min_genes <- 4
 # flankingDNA <-1000
 # threads <- 8
@@ -234,7 +234,7 @@ loctags_on_seqids <-
 genome_filenames <- list.files(path = './gifrop_out/sequence_data', pattern = '.fna', full.names = TRUE)
 
 print('reading in fastas...')
-genome_seqs_list <- mclapply(genome_filenames, Biostrings::readDNAStringSet)
+genome_seqs_list <- mclapply(genome_filenames, Biostrings::readDNAStringSet, mc.cores=threads)
 names(genome_seqs_list) <- genome_filenames
 print('done reading in fastas')
 
@@ -244,7 +244,7 @@ seq_lens <- tibble(seqid=unlist(lapply(genome_seqs_list, names)),
 
 # identify islands in the context of the pangenome
 islands_pangenome_gff <- 
-  remove_core_genome(gpa, reference = reference) %>%    # removes genes found in all genomes
+  remove_core_genome(gpa, reference = reference) %>%  # removes non-island genes
   pivot_longer(cols=-c(1:14),
                names_to = 'genome',
                values_to='locus_tag', 

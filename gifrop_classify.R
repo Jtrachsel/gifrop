@@ -125,7 +125,7 @@ print('Done reading in abricate files')
 # this block creates a 'resistance type' by concatenating all the detected resistances into a string.
 res_info <- allbricates %>%
   filter(!is.na(RESISTANCE)) %>% group_by(island_ID) %>%
-  mutate(RESISTANCE=paste(unique(RESISTANCE), collapse = '|', sep = '|')) %>%
+  mutate(RESISTANCE=paste(unique(sort(RESISTANCE)), collapse = '|', sep = '|')) %>%
   select(island_ID, RESISTANCE) %>% unique()
 
 
