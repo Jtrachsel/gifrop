@@ -57,15 +57,19 @@ cluster_islands <-
       as.matrix() 
     
     
-    #### IF SWITCH HERE FOR TRAD CLUSTERING VS NEW CLUSTERING?
     print('constructing graph: Nodes are islands, edges are simpson similarity index (AKA overlap coef) between joined nodes')
     
-    # jaccard dist? switch to jaccard similarity for edge weights?
     print('calculating simpson similarity AKA overlap coefficient')
+    
+    # write dist objs for visualization
+    overlap_dist <-  parallelDist::parallelDist(dat_mat, method='simpson') %>% 
+      write_rds('./gifrop_out/islands_overlap_dist.rds')
+    
     sim_mat <- 
-      (1 - parallelDist::parallelDist(dat_mat, method = 'simpson')) %>% 
+      (1 - overlap_dist) %>%
       as.matrix() #%>%
     # Matrix::Matrix(sparse = T)
+    rm(overlap_dist)
     
     g <- graph_from_adjacency_matrix(adjmatrix = sim_mat,  weighted = T, mode='upper', diag = F)
     g <- delete_edges(g, E(g)[weight == 0])
@@ -96,10 +100,15 @@ cluster_islands <-
     print('constructing new graph with jaccard similarities')
     print('This will allow the identification of extremely similar genomic islands')
     
+    # write dist objs for visualizations
+    jaccard_dist <- parallelDist::parallelDist(dat_mat, method = 'binary') %>% 
+      write_rds('islands_jaccard_dist.rds')
+    
     sim_mat <- 
-      (1 - parallelDist::parallelDist(dat_mat, method = 'binary')) %>% 
+      (1 - jaccard_dist) %>% 
       as.matrix() #%>%
     # Matrix::Matrix(sparse = T)
+    rm(jaccard_dist)
     
     g <- graph_from_adjacency_matrix(adjmatrix = sim_mat,  weighted = T, mode='upper', diag = F)
     igraph::write.graph(g, file = './gifrop_out/jaccard_coef_graph.dot', format = 'dot')
@@ -141,8 +150,8 @@ island_info <- read_csv('./gifrop_out/classified_island_info.csv',
 
 dereplication_info <- 
   island_info %>% 
-  mutate(HASH=map_chr(.x = genes, .f = ~digest(.x))) %>%   # makes a hash of every island's "genes" column
-  group_by(HASH) %>%
+  mutate(HASH=map_chr(.x = genes, .f = ~digest(.x))) %>%   # makes a hash of every island's "genes" column, I think a group_by would do the same thing?
+  group_by(HASH) %>%  # wouldn't group_by genes do the same thing?
   summarise(all_IDs = paste(island_ID, collapse = '___'),  # no one would have a triple underscore in their genome name right?
             island_ID=island_ID[1],
             num_elements=n()

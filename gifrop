@@ -268,7 +268,7 @@ echo "EXECUTING Rscript 'gifrop_id.R'"
 # arg[5] is reference
 Rscript "$DIR"/gifrop_id.R $exdir $THREADS $MIN_GENES $FLANKING_DNA $REFERENCE 2>&1 | tee -a ./gifrop_out/gifrop.log
 
-
+# this condition doesnt trigger...
 if [[ "$?" != 0 ]]
   then echo 'gifrop_id.R did not execute correctly. See gifrop.log  TERMINATING';
   exit [1];

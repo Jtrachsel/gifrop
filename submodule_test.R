@@ -1,3 +1,7 @@
+
+
+# for every gene, identify the
+
 test <- 
   as.matrix(comdist) %>% 
   as.data.frame() %>%

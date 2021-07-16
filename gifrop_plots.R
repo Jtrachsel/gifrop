@@ -81,6 +81,25 @@ png('./gifrop_out/figures/quat_cluster_types.png', width=840, height=600, res=12
 print(p)
 dev.off()
 
+# tsne
+library(Rtsne)
+
+overlap_dist <- read_rds('./gifrop_out/islands_overlap_dist.rds')
+Rtsne(overlap_dist)
+prcomp()
+princomp()
+cmdscale()
+
+
+
+require(graphics)
+
+# try TSNE, if fails fall back to MDS?
+
+
+
+
+
 # 
 # ####  USE ME? ####
 # 
